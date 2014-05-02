@@ -1,8 +1,11 @@
 ## Install
 
-Download the code and run this:
+1. Download repository
+2. Run make prepare
 
-    npm install express socket.io base64id coffee-script
+## How to run it
+
+Run `node app.js` in root of repository
 
 ## Bugs
 
@@ -12,8 +15,3 @@ Download the code and run this:
 * In high res if the image is taken in portrait mode then there is a flickering effect before doing any zoom (https://github.com/rombdn/img-touch-canvas/issues/3)
 * The disconnect socket sometimes is not triggered. Have to implement something that checks whether clients are connected or not
 
-## How to run it
-
-Go to the folder node then:
-
-    node server.js
