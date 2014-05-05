@@ -1,7 +1,7 @@
 ## Install
 
 1. Download repository
-2. Run make prepare
+2. Run `make build`
 
 ## How to run it
 
