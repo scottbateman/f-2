@@ -15,6 +15,7 @@ build: node_modules ./public/firebase.js ./public/img-touch-canvas.js \
 
 ./public/jquery.hammer.min.js:
 	wget -P ./public/ https://raw.githubusercontent.com/EightMedia/jquery.hammer.js/master/jquery.hammer.min.js
+	wget -P ./public/ https://raw.githubusercontent.com/EightMedia/jquery.hammer.js/master/jquery.hammer.min.map
 
 ./public/jquery.js:
 	wget -P ./public/ http://code.jquery.com/jquery-1.11.1.js
