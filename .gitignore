@@ -5,3 +5,11 @@
 # ignore node modules
 node_modules/
 
+# ignore downloadable js files
+public/firebase.js
+public/holla.js
+public/img-touch-canvas.js
+public/jquery.hammer.min.js
+public/jquery.js
+public/resize.js
+public/screenshot.js
