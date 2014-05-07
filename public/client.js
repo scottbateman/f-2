@@ -53,7 +53,6 @@ var gesturableImg;
 var sync = true;
 
 var sendCursorToThem = true;
-var cursorX, cursorY;
 
 function send_image(){
 	if(sync){
@@ -124,18 +123,10 @@ function main_interval(){
 				'draw_at': $("#flip_video").is(':checked') ? (draw_at == "me" ? "them" : "me") : draw_at
 			});
 		} else if (mouseIsDown && sendCursorToThem) {
-         if (draw_at === 'me') {
-            cursorX = mouseX;
-            cursorY = mouseY;
-         } else if (draw_at === 'them') {
-            cursorX = mouseX - 165;
-            cursorY = mouseY;
-         }
-
          socket.emit('show_cursor', {
-            x: cursorX,
-            y: cursorY,
-            draw_at: (draw_at == "me" ? "them" : "me")
+            x: mouseX / $("#canvas_" + draw_at).width(),
+            y: mouseY / $("#canvas_" + draw_at).height(),
+            at: (draw_at == "me" ? "them" : "me")
          });
       }
 	}, 1000 / 60);
@@ -711,7 +702,9 @@ $(document).ready(function() {
    socket.on('show_cursor', function(data) {
       $('#cursor').show();
 
-      moveCursor(data.draw_at, data.x, data.y);
+      moveCursor(data.at,
+         data.x * $('#canvas_' + data.at).width(),
+         data.y * $('#canvas_' + data.at).height());
    });
 
 	socket.on("clear", function(){
