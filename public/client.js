@@ -827,13 +827,7 @@ function draw(at, x1, y1, x2, y2, size, color){
 }
 
 function moveCursor(at, x, y) {
-   if (at === 'me') {
-      $('#cursor')
-         .css('left', $('#me').offset().left + x)
-         .css('top', $('#me').offset().top + y);
-   } else if (at === 'them') {
-      $('#cursor').css('left', x).css('top', y);
-   }
-
-   // $('#cursor').css('left', x).css('top', y);
+   $('#cursor')
+      .css('left', $('#' + at).offset().left + x)
+      .css('top', $('#' + at).offset().top + y);
 }
