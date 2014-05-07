@@ -683,17 +683,19 @@ $(document).ready(function() {
 	socket.on('draw', function(data) {
 		var flip;
 
-		if($("#photo").is(":visible")){
-			flip = data.draw_at == "me" ? "them" : "me";
-		}
-		else{
-			flip = "them";// + data.draw_at;
+		// if($("#photo").is(":visible")){
+		// 	flip = data.draw_at == "me" ? "them" : "me";
+		// }
+		// else{
+		// 	flip = "them";// + data.draw_at;
+      //
+		// 	if(sync == true){
+		// 		stopDrawing = false;
+		// 		$("#canvas_them").css("z-index", "1");				
+		// 	}
+		// }
 
-			if(sync == true){
-				stopDrawing = false;
-				$("#canvas_them").css("z-index", "1");				
-			}
-		}
+      flip = data.draw_at == "me" ? "them" : "me";
 
 		draw(flip, 
 			$("#canvas_" + flip).width() * data.x1, 
