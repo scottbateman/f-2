@@ -169,6 +169,10 @@ var rtc = holla.createServer(server);
 			socket.broadcast.emit("back_video", data);
 		});
 
+      socket.on('show_cursor', function(data) {
+         socket.broadcast.emit('show_cursor', data);
+      });
+
 		socket.emit("inform_name", {
 			name: socket.id
 		});

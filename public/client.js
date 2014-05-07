@@ -7,6 +7,7 @@ var show_time_size = false;
 var show_flip_video = false;
 var allow_desync_high_res = true;
 var fix_orientation = true;
+var cursor_drawing = true;
 
 //if true will refresh page in order to use the camera for high res., seems to not be needed in chrome mobile 29
 var use_workaround_high_res = false;
@@ -50,6 +51,9 @@ var timestampPrev = 0;
 var gesturableImg;
 
 var sync = true;
+
+var sendCursorToThem = true;
+var cursorX, cursorY;
 
 function send_image(){
 	if(sync){
@@ -96,7 +100,7 @@ function main_interval(){
 			}
 		}
 
-		if(mouseIsDown && draw) {
+		if(mouseIsDown && draw && !sendCursorToThem) {
 			var lp = { x: particle.position.x, y: particle.position.y };
 
 			particle.shift.x += (mouseX - particle.shift.x) * (particle.speed);
@@ -119,7 +123,21 @@ function main_interval(){
 				'trailTime': Math.pow(10, $("#time").val()),
 				'draw_at': $("#flip_video").is(':checked') ? (draw_at == "me" ? "them" : "me") : draw_at
 			});
-		}
+		} else if (mouseIsDown && sendCursorToThem) {
+         if (draw_at === 'me') {
+            cursorX = mouseX;
+            cursorY = mouseY;
+         } else if (draw_at === 'them') {
+            cursorX = mouseX - 165;
+            cursorY = mouseY;
+         }
+
+         socket.emit('show_cursor', {
+            x: cursorX,
+            y: cursorY,
+            draw_at: (draw_at == "me" ? "them" : "me")
+         });
+      }
 	}, 1000 / 60);
 }
 
@@ -433,7 +451,7 @@ $(document).ready(function() {
 		}
 		else{
 			if(window.orientation == 0) {
-				$(".them").css("margin-left", "-165px");
+				$(".them").css("margin-left", "0");
 			} 
 			else {
 				$(".them").css("margin-left", "0");
@@ -688,6 +706,12 @@ $(document).ready(function() {
 		trailTime = counter + data.trailTime;
 	});
 
+   socket.on('show_cursor', function(data) {
+      $('#cursor').show();
+
+      moveCursor(data.draw_at, data.x, data.y);
+   });
+
 	socket.on("clear", function(){
 		trailTime = 0;
 		mouseIsDown = false;
@@ -754,6 +778,10 @@ $(document).ready(function() {
 			}
 		}, 1000);
 	}
+
+   $('#show_line').click(function(ev) {
+      sendCursorToThem = !$(this).is(':checked');
+   });
 });
 
 function init_drawing() {
@@ -794,4 +822,16 @@ function draw(at, x1, y1, x2, y2, size, color){
 			window[at].fill();
 		}
 	}
+}
+
+function moveCursor(at, x, y) {
+   if (at === 'me') {
+      $('#cursor')
+         .css('left', $('#me').offset().left + x)
+         .css('top', $('#me').offset().top + y);
+   } else if (at === 'them') {
+      $('#cursor').css('left', x).css('top', y);
+   }
+
+   // $('#cursor').css('left', x).css('top', y);
 }

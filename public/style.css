@@ -9,7 +9,7 @@ body {
 	height: 100%;
 	position: fixed;
 	display: none;
-	margin-left: -165px;
+	/* margin-left: -165px; */
 }
 
 .me {
@@ -29,10 +29,18 @@ body {
 	position: fixed;
 	bottom: 0;
 	z-index: 2;
+  background-color: white;
 }
 
 .high_res {
 	max-width: 100%;
 	max-height: 70%;
 	display: block;
+}
+
+#cursor {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  display: none;
 }
