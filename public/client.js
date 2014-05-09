@@ -225,32 +225,6 @@ function createFullStream(){
          $(".me").show();
       }
 
-      rtc.on("call", function(call) {
-         webrtcCall = call;
-
-         console.log("Inbound call from ", webrtcCall);
-
-         webrtcCall.on('error', function(err) {
-            throw err;
-         });
-
-         webrtcCall.setLocalStream(localStream);
-         webrtcCall.answer();
-
-         $("#fields").hide();
-         $("#controls").show();
-         $(".them").show();
-         $("#alert").html("").hide();
-
-         for (var key in webrtcCall.users()) {
-            webrtcCall.users()[key].ready(function(stream) {
-               $(".them").show();
-               remoteStream = stream;
-               return remoteStream.pipe($("#them"));
-            });
-         }
-      });
-
       socket.emit("ready");
    };
 
@@ -293,6 +267,32 @@ $(document).ready(function() {
 	//window.location.hostname does not work with "localhost"
 	socket = io.connect("http://" + window.location.hostname + ":8081");
 	rtc = holla.createClient();
+
+   rtc.on("call", function(call) {
+      webrtcCall = call;
+
+      console.log("Inbound call from ", webrtcCall);
+
+      webrtcCall.on('error', function(err) {
+         throw err;
+      });
+
+      webrtcCall.setLocalStream(localStream);
+      webrtcCall.answer();
+
+      $("#fields").hide();
+      $("#controls").show();
+      $(".them").show();
+      $("#alert").html("").hide();
+
+      for (var key in webrtcCall.users()) {
+         webrtcCall.users()[key].ready(function(stream) {
+            $(".them").show();
+            remoteStream = stream;
+            return remoteStream.pipe($("#them"));
+         });
+      }
+   });
 
 	$("#sync_video").click(function(){
 		if($(this).html() == "D"){
