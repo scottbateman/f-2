@@ -21,8 +21,8 @@ var them;
 var draw_at;
 
 var particle = {
-	size: 10,
-	speed: 0.3
+   size: 10,
+   speed: 0.3
 };
 
 var mouseX;
@@ -55,81 +55,81 @@ var sync = true;
 var sendCursorToThem = true;
 
 function send_image(){
-	if(sync){
-		socket.emit("sync_photo_position", {
-			position_x: gesturableImg.position.x,
-			position_y: gesturableImg.position.y,
-			scale_x: gesturableImg.scale.x,
-			scale_y: gesturableImg.scale.y
-		});
-	}
+if(sync){
+   socket.emit("sync_photo_position", {
+      position_x: gesturableImg.position.x,
+      position_y: gesturableImg.position.y,
+      scale_x: gesturableImg.scale.x,
+      scale_y: gesturableImg.scale.y
+   });
+}
 }
 
 function back_video(){
-	location.reload();
+   location.reload();
 }
 
 function hexToRgb(hex) {
-	// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
-	var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+   // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+   var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
 
-	hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-		return r + r + g + g + b + b;
-	});
+   hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+      return r + r + g + g + b + b;
+   });
 
-	var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	return result ? {
-		r: parseInt(result[1], 16),
-		g: parseInt(result[2], 16),
-		b: parseInt(result[3], 16)
-	} : null;
+   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+   return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+   } : null;
 }
 
 function main_interval(){
-	mainInterval = setInterval(function(){
-		counter++;
+mainInterval = setInterval(function(){
+   counter++;
 
-		if(counter >= trailTime){
-			me.fillStyle = 'rgba(0,0,0,0.11)';
-			me.fillRect(0, 0, me.canvas.width, me.canvas.height);
+   if(counter >= trailTime){
+      me.fillStyle = 'rgba(0,0,0,0.11)';
+      me.fillRect(0, 0, me.canvas.width, me.canvas.height);
 
-			if(them){
-				them.fillStyle = 'rgba(0,0,0,0.11)';
-				them.fillRect(0, 0, them.canvas.width, them.canvas.height);
-			}
-		}
-
-		if(mouseIsDown && draw && !sendCursorToThem) {
-			var lp = { x: particle.position.x, y: particle.position.y };
-
-			particle.shift.x += (mouseX - particle.shift.x) * (particle.speed);
-			particle.shift.y += (mouseY - particle.shift.y) * (particle.speed);
-
-			particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
-			particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
-
-			draw(draw_at, lp.x, lp.y, particle.position.x, particle.position.y, particle.size, particle.fillColor);
-
-			trailTime = counter + Math.pow(10, $("#time").val());
-
-			socket.emit('draw', {
-				'x1': lp.x / $("#canvas_" + draw_at).width(),
-				'y1': lp.y / $("#canvas_" + draw_at).height(),
-				'x2': particle.position.x / $("#canvas_" + draw_at).width(),
-				'y2': particle.position.y / $("#canvas_" + draw_at).height(),
-				'size': particle.size,
-				'color': particle.fillColor,
-				'trailTime': Math.pow(10, $("#time").val()),
-				'draw_at': $("#flip_video").is(':checked') ? (draw_at == "me" ? "them" : "me") : draw_at
-			});
-		} else if (mouseIsDown && sendCursorToThem) {
-         socket.emit('show_cursor', {
-            x: mouseX / $("#canvas_" + draw_at).width(),
-            y: mouseY / $("#canvas_" + draw_at).height(),
-            at: (draw_at == "me" ? "them" : "me")
-         });
+      if(them){
+         them.fillStyle = 'rgba(0,0,0,0.11)';
+         them.fillRect(0, 0, them.canvas.width, them.canvas.height);
       }
-	}, 1000 / 60);
+   }
+
+   if(mouseIsDown && draw && !sendCursorToThem) {
+      var lp = { x: particle.position.x, y: particle.position.y };
+
+      particle.shift.x += (mouseX - particle.shift.x) * (particle.speed);
+      particle.shift.y += (mouseY - particle.shift.y) * (particle.speed);
+
+      particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
+      particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
+
+      draw(draw_at, lp.x, lp.y, particle.position.x, particle.position.y, particle.size, particle.fillColor);
+
+      trailTime = counter + Math.pow(10, $("#time").val());
+
+      socket.emit('draw', {
+         'x1': lp.x / $("#canvas_" + draw_at).width(),
+         'y1': lp.y / $("#canvas_" + draw_at).height(),
+         'x2': particle.position.x / $("#canvas_" + draw_at).width(),
+         'y2': particle.position.y / $("#canvas_" + draw_at).height(),
+         'size': particle.size,
+         'color': particle.fillColor,
+         'trailTime': Math.pow(10, $("#time").val()),
+         'draw_at': $("#flip_video").is(':checked') ? (draw_at == "me" ? "them" : "me") : draw_at
+      });
+   } else if (mouseIsDown && sendCursorToThem) {
+      socket.emit('show_cursor', {
+         x: mouseX / $("#canvas_" + draw_at).width(),
+         y: mouseY / $("#canvas_" + draw_at).height(),
+         at: (draw_at === "me" ? "them" : "me")
+      });
+   }
+}, 1000 / 60);
 }
 
 function prepare_photo(){
@@ -204,52 +204,52 @@ function getURLParameter(name) {
 }
 
 function createFullStream(){
-	holla.createFullStream(function(err, stream) {
-		window.stream = stream;
+   holla.createFullStream(function(err, stream) {
+      window.stream = stream;
 
-		console.log("createFullStream");
+      console.log("createFullStream");
 
-		if (err) {
-			throw err;
-		}
+      if (err) {
+         throw err;
+      }
 
-		if(video_drawing){
-			init_drawing();
-		}
+      if(video_drawing){
+         init_drawing();
+      }
 
-		stream.pipe($("#me"));
+      stream.pipe($("#me"));
 
-		if(!$("#picture").val()){
-			$(".me").show();
-		}
+      if(!$("#picture").val()){
+         $(".me").show();
+      }
 
-		rtc.on("call", function(call) {
-			window.call = call;
+      rtc.on("call", function(call) {
+         window.call = call;
 
-			console.log("Inbound call from ", call);
+         console.log("Inbound call from ", call);
 
-			call.on('error', function(err) {
-				throw err;
-			});
+         call.on('error', function(err) {
+            throw err;
+         });
 
-			call.setLocalStream(stream);
-			call.answer();
+         call.setLocalStream(stream);
+         call.answer();
 
-			$("#fields").hide();
-			$("#controls").show();
-			$(".them").show();
-			$("#alert").html("").hide();
+         $("#fields").hide();
+         $("#controls").show();
+         $(".them").show();
+         $("#alert").html("").hide();
 
-			for (var key in call.users()) {
-				call.users()[key].ready(function(stream) {
-					$(".them").show();
-					return stream.pipe($("#them"));
-				});
-			}
-		});
+         for (var key in call.users()) {
+            call.users()[key].ready(function(stream) {
+               $(".them").show();
+               return stream.pipe($("#them"));
+            });
+         }
+      });
 
-		socket.emit("ready");
-	});
+      socket.emit("ready");
+   };
 }
 
 $(document).ready(function() {
@@ -271,18 +271,18 @@ $(document).ready(function() {
 		$("#flip_video_div").hide();
 	}
 
-	$("#canvas_them").hammer().on("doubletap", function(){
-		if($("#img_canvas").is(":visible")){
-			$("#remove").click();
-			stopDrawing = true;
-			$("#canvas_them").css("z-index", "0");
-		}
-	});
+   $("#canvas_them").hammer().on("doubletap", function(){
+      if($("#img_canvas").is(":visible")){
+         $("#remove").click();
+         stopDrawing = true;
+         $("#canvas_them").css("z-index", "0");
+      }
+   });
 
-	$("#img_canvas").hammer().on("doubletap", function(){
-		stopDrawing = false;
-		$("#canvas_them").css("z-index", "1");
-	});
+   $("#img_canvas").hammer().on("doubletap", function(){
+      stopDrawing = false;
+      $("#canvas_them").css("z-index", "1");
+   });
 
 	//window.location.hostname does not work with "localhost"
 	socket = io.connect("http://" + window.location.hostname + ":8081");
@@ -389,41 +389,41 @@ $(document).ready(function() {
 		});
 	});
 
-	socket.on("ready", function(){
-		console.log("socket ready");
+   socket.on("ready", function(){
+      console.log("socket ready");
 
-		var id = setInterval(function(){
-			if (typeof window.stream != 'undefined'){
-				clearInterval(id);
+      var id = setInterval(function(){
+         if (typeof window.stream != 'undefined'){
+            clearInterval(id);
 
-				rtc.createCall(function(err, call) {
-					window.call = call;
+            rtc.createCall(function(err, call) {
+               window.call = call;
 
-					if (err) {
-						throw err;
-					}
+               if (err) {
+                  throw err;
+               }
 
-					console.log("Created call", call);
+               console.log("Created call", call);
 
-					call.on('error', function(err) {
-						throw err;
-					});
+               call.on('error', function(err) {
+                  throw err;
+               });
 
-					call.setLocalStream(stream);
-					call.add($("#whoCall").val());
+               call.setLocalStream(stream);
+               call.add($("#whoCall").val());
 
-					for (var key in call.users()) {
-						call.users()[key].ready(function(stream) {
-							$(".them").show();
-							$("#alert").html("").hide();
+               for (var key in call.users()) {
+                  call.users()[key].ready(function(stream) {
+                     $(".them").show();
+                     $("#alert").html("").hide();
 
-							return stream.pipe($("#them"));
-						});
-					}
-				});
-			}
-		}, 100);
-	});
+                     return stream.pipe($("#them"));
+                  });
+               }
+            });
+         }
+      }, 100);
+   });
 
 	socket.on("back_video", function(){
 		back_video();
@@ -663,9 +663,9 @@ $(document).ready(function() {
 		}
 	});
 	
-	$("#canvas_me, #canvas_them").bind("touchend mouseup", function(){
-		mouseIsDown = false;
-	});
+   $("#canvas_me, #canvas_them").bind("touchend mouseup", function(){
+      mouseIsDown = false;
+   });
 
 	$("#img_canvas").bind("touchend mouseup", function(){
 		send_image();
