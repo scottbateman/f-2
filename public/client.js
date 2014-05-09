@@ -602,22 +602,7 @@ $(document).ready(function() {
 		setSize = true;
 	});
 
-	$("video").resize(function(){
-		if($(this).attr("id") == "me"){
-			if(canvas_me){
-				canvas_me.width = $("#me").width();
-				canvas_me.height = $("#me").height();
-			}
-		}
-		else{
-			if(canvas_them){
-				canvas_them.width = $("#them").width();
-				canvas_them.height = $("#them").height();
-			}
-
-			//$(".them").show();
-		}
-	});
+	$("video").resize(resizeCanvas);
 
 	$("#canvas_me, #canvas_them").bind("touchmove mousemove", function(e){
 		if(!stopDrawing){
@@ -842,3 +827,15 @@ function moveCursor(at, x, y) {
       .css('left', $('#' + at).offset().left + x)
       .css('top', $('#' + at).offset().top + y);
 }
+
+function resizeCanvas(){
+   if(canvas_me){
+      canvas_me.width = $("#me").width();
+      canvas_me.height = $("#me").height();
+   }
+   if(canvas_them){
+      canvas_them.width = $("#them").width();
+      canvas_them.height = $("#them").height();
+   }
+}
+
