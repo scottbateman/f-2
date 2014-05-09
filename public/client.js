@@ -231,6 +231,11 @@ function createFullStream(){
    holla.createStream({audio: true, video: true}, cb);
 }
 
+function hideCursor() {
+   console.log('hiding cursor');
+   $('#cursor').hide();
+}
+
 $(document).ready(function() {
 	$("#img_canvas").hide();
 	$("#drawing").hide();	
@@ -434,6 +439,10 @@ $(document).ready(function() {
 	socket.on("back_video", function(){
 		back_video();
 	});
+
+   socket.on('hide_cursor', function() {
+      hideCursor();
+   });
 
 	$(window).bind('orientationchange', function(e){
 		if($("#picture").val() || fix_orientation){
@@ -671,6 +680,9 @@ $(document).ready(function() {
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(){
       mouseIsDown = false;
+      if (sendCursorToThem) {
+         socket.emit('hide_cursor');
+      }
    });
 
 	$("#img_canvas").bind("touchend mouseup", function(){

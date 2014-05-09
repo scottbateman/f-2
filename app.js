@@ -173,6 +173,10 @@ io.sockets.on('connection', function(socket) {
       socket.broadcast.emit('show_cursor', data);
    });
 
+   socket.on('hide_cursor', function(data) {
+      socket.broadcast.emit('hide_cursor', data);
+   });
+
    socket.emit("inform_name", {
       name: socket.id
    });
