@@ -44,6 +44,7 @@ var name;
 var rtc;
 var localStream;
 var remoteStream;
+var webrtcCall;
 var user;
 
 var stopDrawing = false;
@@ -225,24 +226,24 @@ function createFullStream(){
       }
 
       rtc.on("call", function(call) {
-         window.call = call;
+         webrtcCall = call;
 
-         console.log("Inbound call from ", call);
+         console.log("Inbound call from ", webrtcCall);
 
-         call.on('error', function(err) {
+         webrtcCall.on('error', function(err) {
             throw err;
          });
 
-         call.setLocalStream(localStream);
-         call.answer();
+         webrtcCall.setLocalStream(localStream);
+         webrtcCall.answer();
 
          $("#fields").hide();
          $("#controls").show();
          $(".them").show();
          $("#alert").html("").hide();
 
-         for (var key in call.users()) {
-            call.users()[key].ready(function(stream) {
+         for (var key in webrtcCall.users()) {
+            webrtcCall.users()[key].ready(function(stream) {
                $(".them").show();
                remoteStream = stream;
                return remoteStream.pipe($("#them"));
@@ -399,23 +400,23 @@ $(document).ready(function() {
             clearInterval(id);
 
             rtc.createCall(function(err, call) {
-               window.call = call;
+               webrtcCall = call;
 
                if (err) {
                   throw err;
                }
 
-               console.log("Created call", call);
+               console.log("Created call", webrtcCall);
 
-               call.on('error', function(err) {
+               webrtcCall.on('error', function(err) {
                   throw err;
                });
 
-               call.setLocalStream(localStream);
-               call.add($("#whoCall").val());
+               webrtcCall.setLocalStream(localStream);
+               webrtcCall.add($("#whoCall").val());
 
-               for (var key in call.users()) {
-                  call.users()[key].ready(function(stream) {
+               for (var key in webrtcCall.users()) {
+                  webrtcCall.users()[key].ready(function(stream) {
                      $(".them").show();
                      $("#alert").html("").hide();
 
@@ -493,9 +494,9 @@ $(document).ready(function() {
 		else{
 			console.log("photo click");
 
-			if (typeof call != 'undefined'){
-				//call.end();
-				call.releaseLocalStream();
+			if (typeof webrtcCall != 'undefined'){
+				//webrtcCall.end();
+				webrtcCall.releaseLocalStream();
 				//stream.getVideoTracks()[0].enabled = false;
 			}
 
@@ -727,9 +728,9 @@ $(document).ready(function() {
 				$('#bitrate').html("Bitrate: " + str);
 			}
 
-			if (typeof window.call != 'undefined'){
-				for (var key in call.users()) {
-					call.user(key).connection.getStats(function(stats) {
+			if (typeof webrtcCall != 'undefined'){
+				for (var key in webrtcCall.users()) {
+					webrtcCall.user(key).connection.getStats(function(stats) {
 						var statsString = '';
 						var results = stats.result();
 						var bitrateText;// = 'No bitrate stats';
