@@ -42,7 +42,8 @@ var socket;
 var name;
 
 var rtc;
-var stream;
+var localStream;
+var remoteStream;
 var user;
 
 var stopDrawing = false;
@@ -205,7 +206,7 @@ function getURLParameter(name) {
 
 function createFullStream(){
    holla.createFullStream(function(err, stream) {
-      window.stream = stream;
+      localStream = stream;
 
       console.log("createFullStream");
 
@@ -217,7 +218,7 @@ function createFullStream(){
          init_drawing();
       }
 
-      stream.pipe($("#me"));
+      localStream.pipe($("#me"));
 
       if(!$("#picture").val()){
          $(".me").show();
@@ -232,7 +233,7 @@ function createFullStream(){
             throw err;
          });
 
-         call.setLocalStream(stream);
+         call.setLocalStream(localStream);
          call.answer();
 
          $("#fields").hide();
@@ -243,7 +244,8 @@ function createFullStream(){
          for (var key in call.users()) {
             call.users()[key].ready(function(stream) {
                $(".them").show();
-               return stream.pipe($("#them"));
+               remoteStream = stream;
+               return remoteStream.pipe($("#them"));
             });
          }
       });
@@ -393,7 +395,7 @@ $(document).ready(function() {
       console.log("socket ready");
 
       var id = setInterval(function(){
-         if (typeof window.stream != 'undefined'){
+         if (typeof localStream != 'undefined'){
             clearInterval(id);
 
             rtc.createCall(function(err, call) {
@@ -409,7 +411,7 @@ $(document).ready(function() {
                   throw err;
                });
 
-               call.setLocalStream(stream);
+               call.setLocalStream(localStream);
                call.add($("#whoCall").val());
 
                for (var key in call.users()) {
