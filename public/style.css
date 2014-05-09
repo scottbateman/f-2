@@ -13,10 +13,11 @@ body {
 }
 
 .me {
-	position: fixed;
-	height: 30%;
 	bottom: 0px;
 	right: 0px;
+	max-width: 40%;
+	max-height: 40%;
+	position: fixed;
 	display: none;
 }
 
