@@ -493,10 +493,15 @@ $(document).ready(function() {
 	});
 
 	$("#flip_video").click(function(){
-		var temp = $("#me").attr("src");
+      var me = $('#me');
+      var them = $('#them');
 
-		$("#me").attr("src", $("#them").attr("src"));
-		$("#them").attr("src", temp);
+      me.attr('id', 'them').attr('class', 'them');
+      if (me.prop('tagName') === 'VIDEO') { me.attr('muted', false); }
+      them.attr('id', 'me').attr('class', 'me');
+      if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
+
+      resizeCanvas();
 	});
 
 	$("#photo").click(function(){
