@@ -9,6 +9,7 @@ var allow_desync_high_res = true;
 var fix_orientation = true;
 var cursor_drawing = true;
 var allow_replace_video_with_pic = true;
+var allow_hide_small_video = true;
 
 //if true will refresh page in order to use the camera for high res., seems to not be needed in chrome mobile 29
 var use_workaround_high_res = false;
@@ -262,6 +263,12 @@ $(document).ready(function() {
       $('button#icon').hide();
    }
 
+   if (allow_hide_small_video) {
+      $('div#show_small_video_div').show();
+   } else {
+      $('div#show_small_video_div').hide();
+   }
+
    // $("#canvas_them").hammer().on("doubletap", function(){
    //    if($("#img_canvas").is(":visible")){
    //       $("#remove").click();
@@ -509,6 +516,18 @@ $(document).ready(function() {
 
       resizeCanvas();
 	});
+
+   $('input#show_small_video').click(function() {
+      var me = $('#me');
+      var myCanvas = $('#canvas_me');
+      if ($(this).is(':checked')) {
+         me.show();
+         myCanvas.show();
+      } else {
+         me.hide();
+         myCanvas.hide();
+      }
+   });
 
 	$("#photo").click(function(){
 		if(use_workaround_high_res){
