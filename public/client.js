@@ -128,7 +128,7 @@ mainInterval = setInterval(function(){
       socket.emit('show_cursor', {
          x: mouseX / $("#canvas_" + draw_at).width(),
          y: mouseY / $("#canvas_" + draw_at).height(),
-         at: (draw_at === "me" ? "them" : "me")
+         at: $("#flip_video").is(':checked') ? draw_at : (draw_at === "me" ? "them" : "me")
       });
    }
 }, 1000 / 60);
@@ -694,7 +694,15 @@ $(document).ready(function() {
 		// 	}
 		// }
 
-      flip = data.draw_at == "me" ? "them" : "me";
+      // flip = data.draw_at == "me" ? "them" : "me";
+      // flip = $("#flip_video").is(':checked') ? (flip == "me" ? "them" : "me") : flip;
+      // next if replaces previous 2 lines
+      var checked = $('#flip_video').is(':checked');
+      if ((data.draw_at === 'me' && !checked) || (data.draw_at === 'them' && checked)) {
+         flip = 'them';
+      } else {
+         flip = 'me';
+      }
 
 		draw(flip, 
 			$("#canvas_" + flip).width() * data.x1, 
@@ -709,10 +717,11 @@ $(document).ready(function() {
 
    socket.on('show_cursor', function(data) {
       $('#cursor').show();
+      var at = $("#flip_video").is(':checked') ? (data.at == "me" ? "them" : "me") : data.at;
 
-      moveCursor(data.at,
-         data.x * $('#canvas_' + data.at).width(),
-         data.y * $('#canvas_' + data.at).height());
+      moveCursor(at,
+         data.x * $('#canvas_' + at).width(),
+         data.y * $('#canvas_' + at).height());
    });
 
 	socket.on("clear", function(){
