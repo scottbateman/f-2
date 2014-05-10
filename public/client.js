@@ -8,6 +8,7 @@ var show_flip_video = true;
 var allow_desync_high_res = true;
 var fix_orientation = true;
 var cursor_drawing = true;
+var allow_replace_video_with_pic = true;
 
 //if true will refresh page in order to use the camera for high res., seems to not be needed in chrome mobile 29
 var use_workaround_high_res = false;
@@ -255,6 +256,11 @@ $(document).ready(function() {
 		$("#flip_video_div").hide();
 	}
 
+   if (allow_replace_video_with_pic) {
+      $('button#icon').show();
+   } else {
+      $('button#icon').hide();
+   }
 
    // $("#canvas_them").hammer().on("doubletap", function(){
    //    if($("#img_canvas").is(":visible")){
@@ -603,6 +609,42 @@ $(document).ready(function() {
 		}
 	});
 
+   $('button#icon').click(function() {
+      $('input#icon').click();
+   });
+
+   $('input#icon').change(function(ev) {
+      var files = ev.originalEvent.target.files;
+      if (files && files.length) {
+         if (webrtcCall){
+            webrtcCall.releaseLocalStream();
+         }
+
+         $('button#icon').hide();
+         $('button#back_video').show();
+
+         // var URL = window.URL || window.webkitURL;
+         // var imgURL = URL.createObjectURL(files[0]);
+         var reader = new FileReader();
+         reader.onload = function(ev) {
+            var img = new Image();
+            img.src = ev.target.result;
+
+            socket.emit('send_icon', {
+               src: img.src
+            });
+
+            displayPicture($("#flip_video").is(':checked') ? "them" : "me", img.src);
+         }
+         reader.readAsDataURL(files[0]);
+         // URL.revokeObjectURL(imgURL);
+      }
+   });
+
+   socket.on('send_icon', function(data) {
+      displayPicture($("#flip_video").is(':checked') ? "me" : "them", data.src);
+   });
+
 	$(window).resize(function() {
 		setSize = true;
 	});
@@ -853,3 +895,21 @@ function resizeCanvas(){
    }
 }
 
+function displayPicture(at, src) {
+   var canvas;
+   var video = $('video#' + at);
+   var img = $('<img>', {
+      id: video.attr('id'),
+      class: video.attr('class'),
+      src: src
+   }).appendTo(video.parent()).show();
+   video.remove();
+
+   if (at === 'me') {
+      canvas = canvas_me;
+   } else if (at === 'them') {
+      canvas = canvas_them;
+   }
+   canvas.width = img.width();
+   canvas.height = img.height();
+}

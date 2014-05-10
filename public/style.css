@@ -46,6 +46,10 @@ body {
   display: none;
 }
 
+input#icon {
+  display: none;
+}
+
 canvas {
   z-index: 2;
   opacity: 0.3;
