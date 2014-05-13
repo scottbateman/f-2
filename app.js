@@ -39,174 +39,174 @@ app.use(express.static(join(__dirname, 'public')));
 app.use(express.errorHandler());
 
 var server = http.createServer(app).listen(app.get('port'), function(){
-  console.log('Express server on ' + app.get('ip') + ':' + app.get('port'));
+   console.log('Express server on ' + app.get('ip') + ':' + app.get('port'));
 });
 
 var rtc = holla.createServer(server);
 
-	function size(obj) {
-		var size = 0;
+function size(obj) {
+   var size = 0;
 
-		for (var key in obj) {
-			if (obj.hasOwnProperty(key)){	
-				size++;
-			}
-		}
+   for (var key in obj) {
+      if (obj.hasOwnProperty(key)){
+         size++;
+      }
+   }
 
-		return size;
-	};
+   return size;
+};
 
-	var names = new Array();
+var names = new Array();
 
-	function fix_things(){
-		console.log(names);
+function fix_things(){
+   console.log(names);
 
-		var clients = io.sockets.clients();
-	
-		//removes old clients that did not trigger disconnect
-		var temp = new Array();
+   var clients = io.sockets.clients();
 
-		for(x = 0; x < clients.length; x++){
-			temp[clients[x].id] = "";
-		}
+   //removes old clients that did not trigger disconnect
+   var temp = new Array();
 
-		for (var key in names) {
-			if (!temp.hasOwnProperty(key)){	
-				console.log("deleting!!!!!!!!!!!!!!!");
-				console.log(names, temp);
+   for(x = 0; x < clients.length; x++){
+      temp[clients[x].id] = "";
+   }
 
-				delete names[key];
-				fix_things();
-				return;
-			}
-		}
+   for (var key in names) {
+      if (!temp.hasOwnProperty(key)){
+         console.log("deleting!!!!!!!!!!!!!!!");
+         console.log(names, temp);
 
-		//looks for pairs of people disconnected
-		for (var key in names) {
-			if(names[key] == ""){
-				for (var key2 in names) {
-					if(key2 != key && names[key2] == ""){
-						console.log("found pair of people disconnected!");
-						console.log(names);
+         delete names[key];
+         fix_things();
+         return;
+      }
+   }
 
-						names[key] = key2;
-						names[key2] = key;
+   //looks for pairs of people disconnected
+   for (var key in names) {
+      if(names[key] == ""){
+         for (var key2 in names) {
+            if(key2 != key && names[key2] == ""){
+               console.log("found pair of people disconnected!");
+               console.log(names);
 
-						io.sockets.socket(key).emit("call", {
-							name: key2
-						});
+               names[key] = key2;
+               names[key2] = key;
 
-						io.sockets.socket(key).emit("ready");
+               io.sockets.socket(key).emit("call", {
+                  name: key2
+               });
 
-						fix_things();
-						return;
-					}
-				}
-			}
-		}
-	}
+               io.sockets.socket(key).emit("ready");
 
-	setInterval(fix_things, 500);
+               fix_things();
+               return;
+            }
+         }
+      }
+   }
+}
 
-	io.sockets.on('connection', function(socket) {
-		names[socket.id] = "";
+setInterval(fix_things, 500);
 
-		console.log(socket.id + " connected");
+io.sockets.on('connection', function(socket) {
+   names[socket.id] = "";
 
-		if(size(names) % 2 == 0){
-			var clients = io.sockets.clients();
+   console.log(socket.id + " connected");
 
-			names[socket.id] = clients[size(names) - 2].id;
-			names[clients[size(names) - 2].id] = socket.id
+   if(size(names) % 2 == 0){
+      var clients = io.sockets.clients();
 
-			console.log(clients[size(names) - 2].id + " call " + socket.id);
+      names[socket.id] = clients[size(names) - 2].id;
+      names[clients[size(names) - 2].id] = socket.id
 
-			io.sockets.socket(clients[size(names) - 2].id).emit("call", {
-				name: socket.id
-			});
-		}
+      console.log(clients[size(names) - 2].id + " call " + socket.id);
 
-		console.log("connected");
-		console.log(names);
-
-		socket.on('draw', function(data) {
-			socket.broadcast.emit('draw', data);
-		});
-
-		socket.on('clear', function(data) {
-			socket.broadcast.emit('clear', data);
-		});
-
-		socket.on("photo", function(data) {
-			socket.broadcast.emit("photo", data);
-		});
-		
-		socket.on("sync_photo", function(data) {
-			socket.broadcast.emit("sync_photo", data);
-		});
-
-		socket.on("sync", function(data) {
-			socket.broadcast.emit("sync", data);
-		});
-
-		socket.on("desync", function(data) {
-			socket.broadcast.emit("desync", data);
-		});
-
-		socket.on("sync_photo_position", function(data) {
-			io.sockets.emit('sync_photo_position', data);
-		});
-
-		socket.on("sync_photo_complete", function(data) {
-			socket.broadcast.emit('sync_photo_complete', data);
-		});
-
-		socket.on("prepare_photo", function(data) {
-			socket.broadcast.emit("prepare_photo", data);
-		});
-
-		socket.on("back_video", function(data) {
-			socket.broadcast.emit("back_video", data);
-		});
-
-      socket.on('show_cursor', function(data) {
-         socket.broadcast.emit('show_cursor', data);
+      io.sockets.socket(clients[size(names) - 2].id).emit("call", {
+         name: socket.id
       });
+   }
 
-		socket.emit("inform_name", {
-			name: socket.id
-		});
+   console.log("connected");
+   console.log(names);
 
-		socket.on("ready", function(){
-			var id = setInterval(function(){
-				if(names[socket.id]){
-					console.log("received ready from: " + socket.id + " sending to:" + names[socket.id]);
+   socket.on('draw', function(data) {
+      socket.broadcast.emit('draw', data);
+   });
 
-					io.sockets.socket(names[socket.id]).emit("ready");
-				
-					clearInterval(id);
-				}
-			}, 500);
-		});
+   socket.on('clear', function(data) {
+      socket.broadcast.emit('clear', data);
+   });
 
-		socket.on("disconnect", function(){
-			var clients = io.sockets.clients();
-	
-			//console.log(names);
+   socket.on("photo", function(data) {
+      socket.broadcast.emit("photo", data);
+   });
 
-			for(x = 0; x < clients.length; x++){
-				if(names[clients[x].id] == socket.id){
-					names[clients[x].id] = "";
-				}
-			}
+   socket.on("sync_photo", function(data) {
+      socket.broadcast.emit("sync_photo", data);
+   });
 
-			for(var key in names){
-				if(key == socket.id){
-					delete names[key];		
-				}
-			}
+   socket.on("sync", function(data) {
+      socket.broadcast.emit("sync", data);
+   });
 
-			console.log("disconnected");
-			console.log(names);
-		});
-	});
+   socket.on("desync", function(data) {
+      socket.broadcast.emit("desync", data);
+   });
+
+   socket.on("sync_photo_position", function(data) {
+      io.sockets.emit('sync_photo_position', data);
+   });
+
+   socket.on("sync_photo_complete", function(data) {
+      socket.broadcast.emit('sync_photo_complete', data);
+   });
+
+   socket.on("prepare_photo", function(data) {
+      socket.broadcast.emit("prepare_photo", data);
+   });
+
+   socket.on("back_video", function(data) {
+      socket.broadcast.emit("back_video", data);
+   });
+
+   socket.on('show_cursor', function(data) {
+      socket.broadcast.emit('show_cursor', data);
+   });
+
+   socket.emit("inform_name", {
+      name: socket.id
+   });
+
+   socket.on("ready", function(){
+      var id = setInterval(function(){
+         if(names[socket.id]){
+            console.log("received ready from: " + socket.id + " sending to:" + names[socket.id]);
+
+            io.sockets.socket(names[socket.id]).emit("ready");
+
+            clearInterval(id);
+         }
+      }, 500);
+   });
+
+   socket.on("disconnect", function(){
+      var clients = io.sockets.clients();
+
+      //console.log(names);
+
+      for(x = 0; x < clients.length; x++){
+         if(names[clients[x].id] == socket.id){
+            names[clients[x].id] = "";
+         }
+      }
+
+      for(var key in names){
+         if(key == socket.id){
+            delete names[key];
+         }
+      }
+
+      console.log("disconnected");
+      console.log(names);
+   });
+});
