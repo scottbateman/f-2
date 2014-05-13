@@ -206,7 +206,7 @@ function getURLParameter(name) {
 }
 
 function createFullStream(){
-   holla.createFullStream(function(err, stream) {
+   var cb = function(err, stream) {
       localStream = stream;
 
       console.log("createFullStream");
@@ -253,6 +253,8 @@ function createFullStream(){
 
       socket.emit("ready");
    };
+
+   holla.createStream({audio: true, video: true}, cb);
 }
 
 $(document).ready(function() {
