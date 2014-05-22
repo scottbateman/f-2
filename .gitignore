@@ -4,6 +4,7 @@
 
 # ignore node modules
 node_modules/
+.idea/
 
 # ignore downloadable js files
 public/firebase.js
@@ -13,3 +14,6 @@ public/jquery.hammer.min.js
 public/jquery.js
 public/resize.js
 public/screenshot.js
+public/hammer.js
+public/hammer.showtouches.js
+public/hammer.fakemultitouch.js

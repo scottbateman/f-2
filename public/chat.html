@@ -7,13 +7,16 @@
 
       <script src="jquery.js"></script>
 
-      <script src="jquery.hammer.min.js"></script>
       <script src="resize.js"></script>
       <script src="img-touch-canvas.js"></script>
+      <script src="hammer.js"></script>
+      <!--<script src="jquery.hammer.min.js"></script> -->
+      <script src="hammer.fakemultitouch.js"></script>
+      <script src="hammer.showtouches.js"></script>
 
       <script src="/socket.io/socket.io.js"></script>
       <script src="holla.js"></script>
-      <script src="client.js"></script>
+
 
       <link rel="stylesheet" href="style.css">
    </head>
@@ -36,6 +39,10 @@
          <canvas id="img_canvas" class="high_res" height="363" width="384" style="position:fixed;"></canvas>
 
          <div id="image_stream"></div>
+
+         <div id="wrap_me" class="me" style="overflow:hidden;width: 1000px;height: 1000px"></div>
+         <div id="wrap_them" class="them" style="overflow:hidden;width: 2000px;height: 2000px"></div>
+
       </div>
 
       <div id="controls" style="display:block;">
@@ -82,5 +89,6 @@
       <div id="cursor">
          <img src="/cursor.png"/>
       </div>
+      <script src="client.js"></script>
    </body>
 </html>

@@ -915,20 +915,120 @@ function resizeCanvas(){
 }
 
 function displayPicture(at, src) {
-   var canvas;
-   var video = $('video#' + at);
-   var img = $('<img>', {
-      id: video.attr('id'),
-      class: video.attr('class'),
-      src: src
-   }).appendTo(video.parent()).show();
-   video.remove();
+    var canvas,wrap;
+    if (at === 'me') {
+        canvas = document.getElementById('canvas_me');
+        wrap = document.getElementById('wrap_me');
+    } else if (at === 'them') {
+        canvas = document.getElementById('canvas_them');
+        wrap = document.getElementById('wrap_them');
+    }
+    var video = $('video#' + at);
+    var img = $('<img>', {
+        id: video.attr('id'),
+        //class: video.attr('class'),
+        src: src
+    }).appendTo($(wrap)).show();
+    video.remove();
+    $(wrap).show();
 
-   if (at === 'me') {
-      canvas = canvas_me;
-   } else if (at === 'them') {
-      canvas = canvas_them;
-   }
-   canvas.width = img.width();
-   canvas.height = img.height();
+    img.css("position", "relative");
+    img.css("top", "0px");
+    img.css("left", "0px");
+
+    canvas.width = img.width();
+    canvas.height = img.height();
+
+    imgWidth = img.width();
+    imgHeight = img.height();
+
+    Hammer(img.get(0), {
+        drag_block_horizontal: true,
+        drag_block_vertical: true,
+        drag_min_distance: 0,
+        drag_max_touches: 2
+    }).on("touch drag pinch release", gestureHandler);
+}
+
+// For photo's gestures
+var min   = 0.5,
+    max   = 3,
+    imgWidth,
+    imgHeight,
+    scale = 1,
+    lastX = 0,
+    lastY = 0;
+
+Hammer.plugins.fakeMultitouch();
+Hammer.plugins.showTouches();
+
+function gestureHandler(event) {
+    if(Hammer.utils.isVertical(event.gesture.direction)) {
+        //return;
+    }
+    var targetImg = event.target;
+    var wrap = $(targetImg).parent();
+    event.preventDefault();
+    switch(event.type) {
+        case 'touch':
+            lastX = $(targetImg).offset().left - wrap.offset().left;
+            lastY = $(targetImg).offset().top - wrap.offset().top;
+            break;
+
+        case 'drag':
+            var deltaX = event.gesture.deltaX ;
+            var deltaY = event.gesture.deltaY ;
+            $(targetImg).css("top", lastY + deltaY);
+            $(targetImg).css("left", lastX + deltaX);
+            break;
+
+        case 'release':
+            imgWidth = parseInt( $(targetImg).css( 'width' ) );
+            imgHeight = parseInt( $(targetImg).css( 'height' ) );
+
+            var divWidth = parseInt(wrap.css( 'width' ));
+            var divHeight = parseInt(wrap.css( 'height' ));
+            var divX = parseInt(wrap.offset().left);
+            var divY = parseInt(wrap.offset().top);
+            var imgX = $(targetImg).offset().left - divX;
+            var imgY = $(targetImg).offset().top - divY;
+
+            if (imgWidth >= divWidth){
+                if (imgX < divWidth-imgWidth)
+                    imgX = divWidth-imgWidth;
+                else if (imgX > 0)
+                    imgX = 0;
+            }
+            if (imgHeight >= divHeight){
+                if (imgY > 0)
+                    imgY = 0;
+                else if (imgY < divHeight - imgHeight)
+                    imgY = divHeight-imgHeight;
+            }
+            if (imgWidth < divWidth && imgHeight < divHeight)
+            {
+                if (imgX < 0)
+                    imgX = 0;
+                else if (imgX > divWidth - imgWidth)
+                    imgX = divWidth - imgWidth;
+                if (imgY < 0)
+                    imgY = 0;
+                else if (imgY > divHeight - imgHeight)
+                    imgY = divHeight - imgHeight;
+            }
+            $(targetImg).css("left", imgX );
+            $(targetImg).css("top", imgY);
+            break;
+
+        case 'pinch':
+            scale = event.gesture.scale;
+
+            if ( scale > max ) scale = max;
+            if ( scale < min ) scale = min;
+
+            targetImg.style.width = scale*imgWidth + 'px';
+            if (parseInt($(targetImg).css("max-width")) < 40)
+                targetImg.style.height = scale*imgHeight + 'px';
+            break;
+    }
 }
