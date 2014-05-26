@@ -69,10 +69,6 @@ if(sync){
 }
 }
 
-function back_video(){
-   location.reload();
-}
-
 // function hexToRgb(hex) {
 //    // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
 //    var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
@@ -636,7 +632,8 @@ $(document).ready(function() {
       var files = ev.originalEvent.target.files;
       if (files && files.length) {
          if (webrtcCall){
-            webrtcCall.releaseLocalStream();
+             //webrtcCall.releaseLocalStream();
+             localStream.getVideoTracks()[0].enabled = false;
          }
 
          $('button#icon').hide();
@@ -914,13 +911,30 @@ function resizeCanvas(){
    }
 }
 
+function back_video(){
+    // Restore "set image" button
+    $('button#icon').show();
+    $('button#back_video').hide();
+    // Delete img and hide div
+    $('#wrap_me').css("z-index","-2").hide().empty();
+    $('#wrap_them').css("z-index","-2").hide().empty();
+    // Enable video stream, show video
+    localStream.getVideoTracks()[0].enabled = true;
+    $('video#me').show();
+    $('video#them').show();
+
+    resizeCanvas();
+}
+
 function displayPicture(at, src) {
     var canvas,wrap;
     if (at === 'me') {
         canvas = document.getElementById('canvas_me');
+        canvas_me = canvas;
         wrap = document.getElementById('wrap_me');
     } else if (at === 'them') {
         canvas = document.getElementById('canvas_them');
+        canvas_them = canvas;
         wrap = document.getElementById('wrap_them');
     }
     var video = $('video#' + at);
@@ -929,12 +943,15 @@ function displayPicture(at, src) {
         //class: video.attr('class'),
         src: src
     }).appendTo($(wrap)).show();
-    video.remove();
-    $(wrap).show();
+    //video.hide();
+    $(wrap).css("z-index","3").show();
 
     img.css("position", "relative");
     img.css("top", "0px");
     img.css("left", "0px");
+    var ratio = parseInt(img.css("width")) / parseInt(img.css("height"));
+    img.css("width", $(wrap).width()+"px");
+    img.css("height", (ratio/img.width)+"px");
 
     canvas.width = img.width();
     canvas.height = img.height();
