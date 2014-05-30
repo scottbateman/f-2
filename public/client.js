@@ -298,11 +298,13 @@ $(document).ready(function() {
       $("#controls").show();
       $(".them").show();
       $("#alert").html("").hide();
-
+      var userID = 0;
       for (var key in webrtcCall.users()) {
          webrtcCall.users()[key].ready(function(stream) {
             $(".them").show();
             remoteStream = stream;
+            remoteUser[userID] = key;
+            userID++;
             return remoteStream.pipe($("#them"));
          });
       }
@@ -431,12 +433,15 @@ $(document).ready(function() {
 
                webrtcCall.setLocalStream(localStream);
                webrtcCall.add($("#whoCall").val());
-
+               var userID = 0;
                for (var key in webrtcCall.users()) {
                   webrtcCall.users()[key].ready(function(stream) {
+                      remoteStream = stream;
+                     console.log("I CALL FIRST");
                      $(".them").show();
                      $("#alert").html("").hide();
-
+                     remoteUser[userID] = key;
+                     userID++;
                      return stream.pipe($("#them"));
                   });
                }
@@ -446,7 +451,7 @@ $(document).ready(function() {
    });
 
 	socket.on("back_video", function(){
-		back_video();
+		back_video(true);
 	});
 
    socket.on('hide_cursor', function() {
@@ -477,7 +482,7 @@ $(document).ready(function() {
 	$("#back_video").click(function(){
 		socket.emit("back_video");
 
-		back_video();		
+		back_video(false);
 	});
 
 	$("#size").change(function(){
@@ -625,15 +630,17 @@ $(document).ready(function() {
 	});
 
    $('button#icon').click(function() {
+      if (localStream) localStream.stop();
       $('input#icon').click();
    });
 
    $('input#icon').change(function(ev) {
       var files = ev.originalEvent.target.files;
       if (files && files.length) {
+
          if (webrtcCall){
-             //webrtcCall.releaseLocalStream();
-             localStream.getVideoTracks()[0].enabled = false;
+             webrtcCall.releaseLocalStream();
+             //localStream.getVideoTracks()[0].enabled = false;
          }
 
          $('button#icon').hide();
@@ -911,7 +918,7 @@ function resizeCanvas(){
    }
 }
 
-function back_video(){
+function back_video(isReceiver){
     // Restore "set image" button
     $('button#icon').show();
     $('button#back_video').hide();
@@ -919,11 +926,13 @@ function back_video(){
     $('#wrap_me').css("z-index","-2").hide().empty();
     $('#wrap_them').css("z-index","-2").hide().empty();
     // Enable video stream, show video
-    localStream.getVideoTracks()[0].enabled = true;
+    //localStream.getVideoTracks()[0].enabled = true;
     $('video#me').show();
     $('video#them').show();
 
     resizeCanvas();
+    if (!isReceiver)
+        callAgain(0);
 }
 
 function displayPicture(at, src) {
@@ -967,6 +976,7 @@ function displayPicture(at, src) {
     }).on("touch drag pinch release", gestureHandler);
 }
 
+///////////////////////////////////////////////////////
 // For photo's gestures
 var min   = 0.5,
     max   = 3,
@@ -1049,3 +1059,84 @@ function gestureHandler(event) {
             break;
     }
 }
+
+////////////////////////////////////////////////////////////////
+// Switch cameras
+var remoteUser = new Array();
+var sourceIDs = new Array();
+var videoSource;
+var camera1 = true;
+var videoSelect = document.querySelector("select#videoSource");
+
+MediaStreamTrack.getSources(gotSources);
+
+function gotSources(sourceInfos) {
+    var storageIndex = 0;
+    for (var i = 0; i != sourceInfos.length; ++i) {
+        var sourceInfo = sourceInfos[i];
+        var option = document.createElement("option");
+        option.value = sourceInfo.id;
+        if (sourceInfo.kind === 'video') {
+            option.text = sourceInfo.label || 'camera ' + (videoSelect.length + 1);
+            videoSelect.appendChild(option);
+            sourceIDs[storageIndex] = sourceInfos[i].id;
+            storageIndex++;
+        }
+    }
+}
+
+videoSelect.onchange = function() {
+    camera1 = !camera1;
+    if (camera1)
+        videoSource = 0;
+    else
+        videoSource = 1;
+
+    callAgain(videoSource)
+};
+
+var callAgain = function (sourceID){
+    if (localStream) localStream.stop();
+    if (remoteStream) remoteStream.stop();
+    holla.createStream({video:{optional: [{sourceId: sourceIDs[sourceID]}]},audio:true}, function(error, stream){
+        if (error) {
+            alert(error);
+            throw error;
+        }
+        localStream = stream;
+        stream.pipe($('#me'));
+
+        rtc.createCall(function(err, call) {
+            webrtcCall = call;
+
+            if (err) {
+                throw err;
+            }
+
+            console.log("Created call again", webrtcCall);
+
+            webrtcCall.on('error', function(err) {
+                throw err;
+            });
+
+            webrtcCall.setLocalStream(localStream);
+            //webrtcCall.add($("#whoCall").val());
+            webrtcCall.add(remoteUser[0]);
+
+            var userID = 0;
+            for (var key in webrtcCall.users()) {
+                webrtcCall.users()[key].ready(function(stream) {
+                    remoteStream = stream;
+                    console.log("successfully");
+                    $(".them").show();
+                    $("#alert").html("").hide();
+                    remoteUser[userID] = key;
+                    userID++;
+                    return stream.pipe($("#them"));
+                });
+            }
+            $('#flip_video').attr('checked', false);
+        });
+    });
+};
+/////////////////////////////////////////////////////
