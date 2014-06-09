@@ -10,6 +10,9 @@ var os = require('os');
 
 var holla = require('holla');
 var io = require('socket.io').listen(8081);
+var fs=require('fs');
+var path = require("path");
+var im = require('imagemagick');
 
 var app = express();
 
@@ -59,7 +62,7 @@ function size(obj) {
 var names = new Array();
 
 function fix_things(){
-   console.log(names);
+   //console.log(names);
 
    var clients = io.sockets.clients();
 
@@ -179,7 +182,29 @@ io.sockets.on('connection', function(socket) {
 
    socket.on('send_icon', function(data) {
       socket.broadcast.emit('send_icon', data);
-   })
+
+       var matches = data.src.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/),
+           imgBuffer = {};
+
+       if (matches.length !== 3) {
+           return new Error('Invalid img input data');
+       }
+
+       imgBuffer.type = matches[1];
+       imgBuffer.data = new Buffer(matches[2], 'base64');
+
+       fs.writeFile(__dirname +'/temp/'+data.name, imgBuffer.data, function(err) {
+           if (err) throw err;
+           im.resize({
+               srcPath: __dirname +'/temp/'+data.name,
+               dstPath: __dirname +'/temp/thumb/'+data.name,
+               width:   50
+           }, function(err, stdout, stderr){
+               if (err) throw err;
+               console.log('resized image ');
+           });
+       });
+   });
 
    socket.emit("inform_name", {
       name: socket.id
@@ -217,4 +242,43 @@ io.sockets.on('connection', function(socket) {
       console.log("disconnected");
       console.log(names);
    });
+
+    socket.on("get_thumbnails", function(){
+        var p = __dirname +'/temp/thumb/';
+        fs.readdir(p, function (err, files) {
+            if (err) {
+                throw err;
+            }
+
+            files.map(function (file) {
+                return path.join(p, file);
+            }).filter(function (file) {
+                return fs.statSync(file).isFile();
+            }).forEach(function (file) {
+                console.log("%s (%s)", file, path.extname(file));
+                var buffer = fs.readFileSync(file);
+                socket.emit("receive_thumbnails", {
+                    src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
+                    name: file
+                });
+            });
+        });
+    });
+
+    socket.on("get_image", function(imgName){
+        var split = imgName.split('\\');
+        var fileName = __dirname + '/temp/' + split[split.length-1];
+        var buffer = fs.readFileSync(fileName);
+        socket.emit("receive_image", {
+            src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
+            name: imgName,
+            local: true
+        });
+
+        io.sockets.socket(names[socket.id]).emit("receive_image", {
+            src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
+            name: imgName,
+            local: false
+        });
+    });
 });
