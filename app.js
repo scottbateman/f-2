@@ -281,4 +281,20 @@ io.sockets.on('connection', function(socket) {
             local: false
         });
     });
+
+    socket.on('move_image', function(data) {
+        io.sockets.socket(names[socket.id]).emit("move_image",data);
+    });
+
+    socket.on('start_move_image', function(){
+        io.sockets.socket(names[socket.id]).emit("start_move_image");
+    });
+
+    socket.on('stop_move_image', function(){
+        io.sockets.socket(names[socket.id]).emit("stop_move_image");
+    });
+
+    socket.on('hide_thumbnails', function(){
+        io.sockets.socket(names[socket.id]).emit("hide_thumbnails");
+    });
 });
