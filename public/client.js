@@ -8,7 +8,7 @@ var show_flip_video = false;
 var allow_desync_high_res = true;
 var fix_orientation = true;
 var cursor_drawing = true;
-var allow_replace_video_with_pic = true;
+var allow_replace_video_with_pic = false;
 var allow_hide_small_video = false;
 
 //if true will refresh page in order to use the camera for high res., seems to not be needed in chrome mobile 29
@@ -631,9 +631,9 @@ $(document).ready(function() {
              //localStream.getVideoTracks()[0].enabled = false;
          }
 
-         $('button#icon').hide();
-         $('button#back_video').show();
-
+         $('.icon#take_video').show();
+         $('.icon#take_photo').hide();
+         isTakingPhoto = true;
          /*
          var reader = new FileReader();
          reader.file = files[0];
@@ -956,9 +956,6 @@ function resizeCanvas(){
 }
 
 function back_video(isReceiver){
-    // Restore "set image" button
-    $('button#icon').show();
-    $('button#back_video').hide();
     // Delete img and hide div
     $('#wrap_me').css("z-index","-2").hide().empty();
     $('#wrap_them').css("z-index","-2").hide().empty();
@@ -1201,6 +1198,7 @@ var callAgain = function (sourceID){
                     $("#alert").html("").hide();
                     remoteUser[userID] = key;
                     userID++;
+                    displayIcons();
                     return stream.pipe($("#them"));
                 });
             }
@@ -1302,6 +1300,7 @@ var animSpeed = 300;
 var isShowSmallVideo = true;
 var videoMeWidth,videoMeHeight;
 var isFlipVideo = false;
+var isTakingPhoto = false;
 
 $('.icon#hide_video').click(function(){
     $('.icon#hide_video').animate({height:"25px",width:'25'},100, function(){
@@ -1342,6 +1341,9 @@ function displayIcons(){
     $('.icon').show();
     var iHideVideo = $('.icon#hide_video');
     var iSwapVideo = $('.icon#swap_video');
+    var iSwitchCam = $('.icon#switch_cam');
+    var iTakePhoto = $('.icon#take_photo');
+    var iTakeVideo = $('.icon#take_video');
     var videoMe = $('#me');
 
     iHideVideo.css('right', (parseInt(videoMe.css('width')) - parseInt(iHideVideo.css('width'))) +'px');
@@ -1349,6 +1351,15 @@ function displayIcons(){
 
     iSwapVideo.css('right', '0px');
     iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
+
+    iSwitchCam.css('top', '2%').css('right', '20%').css('width','40px').css('height', '40px');
+    iTakePhoto.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
+    iTakeVideo.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
+
+    if (isTakingPhoto)
+        iTakePhoto.hide();
+    else
+        iTakeVideo.hide();
 }
 
 $('.icon#swap_video').click(function(){
@@ -1392,4 +1403,26 @@ $('.icon#swap_video').click(function(){
         resizeCanvas();
         displayIcons();
     });
+});
+
+$('.icon#switch_cam').click(function(){
+    camera1 = !camera1;
+    if (camera1)
+        videoSource = 0;
+    else
+        videoSource = 1;
+
+    callAgain(videoSource);
+});
+
+$('.icon#take_photo').click(function(){
+    //if (localStream) localStream.stop();
+    $('input#icon').click();
+});
+
+$('.icon#take_video').click(function(){
+    $('.icon').hide();
+    socket.emit("back_video");
+    back_video(false);
+    isTakingPhoto = false;
 });
