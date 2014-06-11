@@ -4,7 +4,7 @@ var high_res_drawing = false;
 var high_res = false;
 var show_bitrate = false;
 var show_time_size = false;
-var show_flip_video = true;
+var show_flip_video = false;
 var allow_desync_high_res = true;
 var fix_orientation = true;
 var cursor_drawing = true;
@@ -120,13 +120,13 @@ mainInterval = setInterval(function(){
          'size': particle.size,
          'color': particle.fillColor,
          'trailTime': Math.pow(10, $("#time").val()),
-         'draw_at': $("#flip_video").is(':checked') ? (draw_at == "me" ? "them" : "me") : draw_at
+         'draw_at': isFlipVideo ? (draw_at == "me" ? "them" : "me") : draw_at
       });
    } else if (mouseIsDown && sendCursorToThem) {
       socket.emit('show_cursor', {
          x: mouseX / $("#canvas_" + draw_at).width(),
          y: mouseY / $("#canvas_" + draw_at).height(),
-         at: $("#flip_video").is(':checked') ? draw_at : (draw_at === "me" ? "them" : "me")
+         at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
       });
    }
 }, 1000 / 60);
@@ -157,8 +157,6 @@ function prepare_photo(){
 	canvas_them.height = $("#img_canvas").height();
 
 	$("#img_canvas").hide();
-	$("#flip_video").hide();
-	$("#flip_video_label").hide();
 	$("#photo").hide();
 
 	$("#back_video").show();
@@ -508,38 +506,6 @@ $(document).ready(function() {
 		socket.emit('clear');
 	});
 
-	$("#flip_video").click(function(){
-        if (currentImg){
-            $(currentImg).css('top', '0px');
-            $(currentImg).css('left', '0px');
-            var parentDiv = $(currentImg).parent();
-            if (parentDiv.attr('class') == 'me') {
-                $(currentImg).appendTo($(wrap_them));
-                $('#me').hide();
-                resizeImg(wrap_them, currentImg);
-            }
-            else {
-                if ($('#hide_thumbnail').is(":visible"))
-                    $(currentImg).appendTo($(wrap_me));
-                $('#them').show();
-                resizeImg(wrap_me, currentImg);
-            }
-            originW = parseInt( currentImg.css( 'width' ) );
-            originH = parseInt( currentImg.css( 'height' ) );
-        }
-
-      var me = $('#me');
-      var them = $('#them');
-
-      me.attr('id', 'them').attr('class', 'them');
-      if (me.prop('tagName') === 'VIDEO') { me.attr('muted', false); }
-      them.attr('id', 'me').attr('class', 'me');
-      if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
-
-      resizeCanvas();
-        displayIcons();
-	});
-
    $('input#show_small_video').click(function() {
       var me = $('#me');
       var myCanvas = $('#canvas_me');
@@ -701,7 +667,7 @@ $(document).ready(function() {
                           name: file.name
                       });
 
-                      displayPicture($("#flip_video").is(':checked') ? "them" : "me", img.src);
+                      displayPicture(isFlipVideo ? "them" : "me", img.src);
                   };
                   reader.readAsDataURL(files[i]);
               })(files[i]);
@@ -710,7 +676,7 @@ $(document).ready(function() {
    });
 
    socket.on('send_icon', function(data) {
-      displayPicture($("#flip_video").is(':checked') ? "me" : "them", data.src);
+      displayPicture(isFlipVideo ? "me" : "them", data.src);
    });
 
 	$(window).resize(function() {
@@ -807,7 +773,7 @@ $(document).ready(function() {
       // flip = data.draw_at == "me" ? "them" : "me";
       // flip = $("#flip_video").is(':checked') ? (flip == "me" ? "them" : "me") : flip;
       // next if replaces previous 2 lines
-      var checked = $('#flip_video').is(':checked');
+      var checked = isFlipVideo;
       if ((data.draw_at === 'me' && !checked) || (data.draw_at === 'them' && checked)) {
          flip = 'them';
       } else {
@@ -827,7 +793,7 @@ $(document).ready(function() {
 
    socket.on('show_cursor', function(data) {
       $('#cursor').show();
-      var at = $("#flip_video").is(':checked') ? (data.at == "me" ? "them" : "me") : data.at;
+      var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
 
       moveCursor(at,
          data.x * $('#canvas_' + at).width(),
@@ -1238,7 +1204,7 @@ var callAgain = function (sourceID){
                     return stream.pipe($("#them"));
                 });
             }
-            $('#flip_video').attr('checked', false);
+            isFlipVideo = false;
         });
     });
 };
@@ -1306,9 +1272,9 @@ function receiveThumbnails(data){
 
 function receiveImage(data){
     if (data.local)
-        displayPicture($("#flip_video").is(':checked') ? "them" : "me", data.src);
+        displayPicture(isFlipVideo ? "them" : "me", data.src);
     else {
-        displayPicture($("#flip_video").is(':checked') ? "me" : "them", data.src);
+        displayPicture(isFlipVideo ? "me" : "them", data.src);
         originW = parseInt( currentImg.css( 'width' ) );
         originH = parseInt( currentImg.css( 'height' ) );
     }
@@ -1335,6 +1301,7 @@ function resizeImg(wrapDiv,img)
 var animSpeed = 300;
 var isShowSmallVideo = true;
 var videoMeWidth,videoMeHeight;
+var isFlipVideo = false;
 
 $('.icon#hide_video').click(function(){
     $('.icon#hide_video').animate({height:"25px",width:'25'},100, function(){
@@ -1352,20 +1319,21 @@ function showSmallVideo() {
         iHideVideo.animate({
             right:(videoMeWidth - parseInt(iHideVideo.css('width')))+'px',
             bottom:(videoMeHeight - parseInt(iHideVideo.css('height')))+'px'
-        },animSpeed*0.5);
+        },animSpeed*0.3);
         iSwapVideo.animate({bottom:(videoMeHeight - parseInt(iSwapVideo.css('width')))+'px'},animSpeed*0.5);
         iSwapVideo.show(animSpeed);
         me.show(animSpeed);
-        myCanvas.show(animSpeed);
+        myCanvas.show();
         isShowSmallVideo = true;
     } else {
         videoMeWidth = parseInt(me.css('width'));
         videoMeHeight = parseInt(me.css('height'));
-        iHideVideo.animate({right:"0px",bottom:'0px'},animSpeed*0.5);
+        iHideVideo.animate({right:"0px",bottom:'0px'},animSpeed*0.5, function(){
+            myCanvas.hide();
+        });
         iSwapVideo.animate({bottom:'0px'},animSpeed*0.5);
         iSwapVideo.hide(animSpeed);
         me.hide(animSpeed);
-        myCanvas.hide(animSpeed);
         isShowSmallVideo = false;
     }
 }
@@ -1382,3 +1350,46 @@ function displayIcons(){
     iSwapVideo.css('right', '0px');
     iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
 }
+
+$('.icon#swap_video').click(function(){
+    isFlipVideo = !isFlipVideo;
+    if (currentImg){
+        $(currentImg).css('top', '0px');
+        $(currentImg).css('left', '0px');
+        var parentDiv = $(currentImg).parent();
+        if (parentDiv.attr('class') == 'me') {
+            $(currentImg).appendTo($(wrap_them));
+            $('#me').hide();
+            resizeImg(wrap_them, currentImg);
+        }
+        else {
+            if ($('#hide_thumbnail').is(":visible"))
+                $(currentImg).appendTo($(wrap_me));
+            $('#them').show();
+            resizeImg(wrap_me, currentImg);
+        }
+        originW = parseInt( currentImg.css( 'width' ) );
+        originH = parseInt( currentImg.css( 'height' ) );
+    }
+
+    var me = $('#me');
+    var them = $('#them');
+    me.hide(animSpeed*0.5);
+    them.hide(animSpeed *0.5);
+    $('.icon').hide();
+    $('#canvas_me').hide();
+    $('#canvas_them').hide();
+
+    me.attr('id', 'them').attr('class', 'them');
+    if (me.prop('tagName') === 'VIDEO') { me.attr('muted', false); }
+    them.attr('id', 'me').attr('class', 'me');
+    if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
+
+    me.show(animSpeed);
+    them.show(animSpeed, function(){
+        $('#canvas_me').show();
+        $('#canvas_them').show();
+        resizeCanvas();
+        displayIcons();
+    });
+});
