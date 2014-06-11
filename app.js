@@ -59,6 +59,16 @@ function size(obj) {
    return size;
 };
 
+// Create temp folders to store images
+if(!fs.existsSync(__dirname +'/temp/')) {
+    fs.mkdirSync(__dirname + '/temp/', 0766, function (err) {
+        if (err) console.log(err);
+    });
+    fs.mkdirSync(__dirname + '/temp/thumb/', 0766, function (err) {
+        if (err) console.log(err);
+    });
+}
+
 var names = new Array();
 
 function fix_things(){
