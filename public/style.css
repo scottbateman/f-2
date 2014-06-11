@@ -15,7 +15,7 @@ body {
 .me {
   bottom: 0px;
   right: 0px;
-  max-width: 40%;
+  max-width: 50%;
   max-height: 40%;
   min-width: 10%;
   position: fixed;
@@ -70,4 +70,12 @@ canvas {
     position: fixed;
     overflow:hidden;
     z-index:4;
+}
+
+.icon {
+    z-index: 7;
+    display:none;
+    width:20px;
+    height:20px;
+    position: fixed;
 }

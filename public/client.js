@@ -9,7 +9,7 @@ var allow_desync_high_res = true;
 var fix_orientation = true;
 var cursor_drawing = true;
 var allow_replace_video_with_pic = true;
-var allow_hide_small_video = true;
+var allow_hide_small_video = false;
 
 //if true will refresh page in order to use the camera for high res., seems to not be needed in chrome mobile 29
 var use_workaround_high_res = false;
@@ -226,7 +226,7 @@ function createFullStream(){
       socket.emit("ready");
    };
 
-   holla.createStream({audio: true, video: true}, cb);
+   holla.createStream({audio: false, video: true}, cb);
 }
 
 function hideCursor() {
@@ -305,6 +305,7 @@ $(document).ready(function() {
             remoteStream = stream;
             remoteUser[userID] = key;
             userID++;
+            displayIcons();
             return remoteStream.pipe($("#them"));
          });
       }
@@ -442,6 +443,7 @@ $(document).ready(function() {
                      $("#alert").html("").hide();
                      remoteUser[userID] = key;
                      userID++;
+                     displayIcons();
                      return stream.pipe($("#them"));
                   });
                }
@@ -535,6 +537,7 @@ $(document).ready(function() {
       if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
 
       resizeCanvas();
+        displayIcons();
 	});
 
    $('input#show_small_video').click(function() {
@@ -1148,7 +1151,6 @@ function gestureHandler(event) {
 }
 
 function moveImage(data) {
-
     if (currentImg) {
         if (data.top) {
             currentImg.css('top', data.top * $(wrap_them).height() + 'px');
@@ -1326,4 +1328,57 @@ function resizeImg(wrapDiv,img)
         img.css("height", ($(wrapDiv).height())+'px');
         img.css("width", (ratio*img.height)+"px");
     }
+}
+
+//////////////////////////////
+// Icons
+var animSpeed = 300;
+var isShowSmallVideo = true;
+var videoMeWidth,videoMeHeight;
+
+$('.icon#hide_video').click(function(){
+    $('.icon#hide_video').animate({height:"25px",width:'25'},100, function(){
+        $('.icon#hide_video').animate({height:"20px",width:'20'},100);
+    });
+    showSmallVideo();
+});
+
+function showSmallVideo() {
+    var me = $('#me');
+    var myCanvas = $('#canvas_me');
+    var iHideVideo = $('.icon#hide_video');
+    var iSwapVideo = $('.icon#swap_video');
+    if (!isShowSmallVideo) {
+        iHideVideo.animate({
+            right:(videoMeWidth - parseInt(iHideVideo.css('width')))+'px',
+            bottom:(videoMeHeight - parseInt(iHideVideo.css('height')))+'px'
+        },animSpeed*0.5);
+        iSwapVideo.animate({bottom:(videoMeHeight - parseInt(iSwapVideo.css('width')))+'px'},animSpeed*0.5);
+        iSwapVideo.show(animSpeed);
+        me.show(animSpeed);
+        myCanvas.show(animSpeed);
+        isShowSmallVideo = true;
+    } else {
+        videoMeWidth = parseInt(me.css('width'));
+        videoMeHeight = parseInt(me.css('height'));
+        iHideVideo.animate({right:"0px",bottom:'0px'},animSpeed*0.5);
+        iSwapVideo.animate({bottom:'0px'},animSpeed*0.5);
+        iSwapVideo.hide(animSpeed);
+        me.hide(animSpeed);
+        myCanvas.hide(animSpeed);
+        isShowSmallVideo = false;
+    }
+}
+
+function displayIcons(){
+    $('.icon').show();
+    var iHideVideo = $('.icon#hide_video');
+    var iSwapVideo = $('.icon#swap_video');
+    var videoMe = $('#me');
+
+    iHideVideo.css('right', (parseInt(videoMe.css('width')) - parseInt(iHideVideo.css('width'))) +'px');
+    iHideVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iHideVideo.css('height'))) +'px');
+
+    iSwapVideo.css('right', '0px');
+    iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
 }
