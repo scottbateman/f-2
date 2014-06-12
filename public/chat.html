@@ -6,7 +6,7 @@
       <title>Holla Test</title>
 
       <script src="jquery.js"></script>
-
+      <script src="jquery-ui.js"></script>
       <script src="resize.js"></script>
       <script src="img-touch-canvas.js"></script>
       <script src="hammer.js"></script>
@@ -42,13 +42,20 @@
 
          <div id="wrap_me" class="me" style="overflow:hidden;"></div>
          <div id="wrap_them" class="them" style="overflow:hidden;"></div>
-         <div id="wrap_thumb" class="thumbnail"></div>
-         <img id="loading" style="display:none; z-index: 6;position: absolute;top: 50%;left: 50%; width:50;height:50" src="loading1.gif"/>
+         <div id="wrap_thumb" class="thumbnail">
+             <div id="wrap_scroll" class="thumbnail"></div>
+         </div>
+         <img id="loading" style="display:none; z-index: 8;position: absolute;top: 50%;left: 50%; width:80;height:80" src="loading1.gif"/>
          <img id="hide_video" class="icon" src="image/arrow_hide.png"/>
          <img id="swap_video" class="icon" src="image/arrow_swap.png"/>
          <img id="switch_cam" class="icon" src="image/camera_switch.png"/>
          <img id="take_photo" class="icon" src="image/take_photo.png"/>
          <img id="take_video" class="icon" src="image/take_video.png"/>
+         <img id="arrow" class="icon" src="image/arrow_cursor.png"/>
+         <img id="pen" class="icon" src="image/pen.png"/>
+         <img id="palette" class="icon" src="image/palette.png"/>
+         <img id="eraser" class="icon" src="image/eraser.png"/>
+         <img id="thumbnail" class="icon" src="image/thumbnail.png"/>
       </div>
 
       <div id="controls" style="max-width:50%;display:block;">
@@ -62,8 +69,8 @@
             <input id="time" type="range" name="points" min="0" max="3">
          </div>
 
-         <button id="remove">Clear</button>
-         <button id="colour">Change color</button>
+         <button id="remove" style="display: none">Clear</button>
+         <button id="colour" style="display: none">Change color</button>
 
          <button id="back_video" style="display: none;">Back to Video</button>
          <button id="sync_video" style="display: none;">DS</button>
@@ -80,8 +87,8 @@
          </div>
 
          <div id="show_line_div">
-            <label id="show_line_label" for="show_line">Draw</label>
-            <input type="checkbox" id="show_line"/>
+            <label id="show_line_label" for="show_line"  style="display: none">Draw</label>
+            <input type="checkbox" id="show_line"  style="display: none"/>
             <label id="move_img_label" for="move_img">Move</label>
             <input type="checkbox" id="move_img" checked="true"/>
          </div>
@@ -95,7 +102,7 @@
               <label for='videoSource'>Video source: </label><select id='videoSource'></select>
           </div>
 
-          <button id="show_thumbnail">Show thumbnails</button>
+          <button id="show_thumbnail" style="display: none;">Show thumbnails</button>
           <button id="hide_thumbnail" style="display: none;">Hide thumbnails</button>
 
          <div id="bitrate">Bitrate:</div>

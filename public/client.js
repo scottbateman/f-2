@@ -1019,7 +1019,7 @@ var min   = 0.5,
     scale = 1,
     lastX = 0,
     lastY = 0;
-var currentImg,wrap_me,wrap_them, originW, originH;
+var currentImg,wrap_me,wrap_them, originW, originH,lastScrollY;
 
 Hammer.plugins.fakeMultitouch();
 Hammer.plugins.showTouches();
@@ -1126,6 +1126,28 @@ function moveImage(data) {
     }
 }
 
+$('#wrap_scroll').css('max-height', '500%');
+$('#wrap_thumb').css('height', '38%');
+Hammer($('#wrap_thumb').get(0), {
+    drag_block_horizontal: true,
+    drag_block_vertical: true,
+    drag_min_distance: 0,
+    drag_max_touches: 2
+}).on("swipedown swipeup touch drag", function(e){
+    e.preventDefault();
+    $('#wrap_scroll').children().stop();
+    $('#wrap_thumb').css('width',$('#wrap_scroll').css('width'));
+    switch(e.type) {
+        case 'touch':
+            lastScrollY = parseInt($('#wrap_scroll').css('top'));
+            break;
+
+        case 'drag':
+            var deltaY = event.gesture.deltaY ;
+            $('#wrap_scroll').css("top", lastScrollY +deltaY +'px');
+            break;
+    }
+});
 ////////////////////////////////////////////////////////////////
 // Switch cameras
 var remoteUser = new Array();
@@ -1210,22 +1232,20 @@ var callAgain = function (sourceID){
 /////////////////////////////////////////////////////
 // Image thumbnails
 var isMovingImg = true;
-$('button#show_thumbnail').click(function() {
-    var wrap = document.getElementById('wrap_thumb');
-    $(wrap).empty();
-    socket.emit('get_thumbnails');
-    $('button#hide_thumbnail').show();
-    $('button#show_thumbnail').hide();
-});
-
-$('button#hide_thumbnail').click(function(){
-    $('#wrap_thumb').empty();
-    $('#wrap_me').empty();
-    $('#wrap_them').empty();
-    $('button#show_thumbnail').show();
-    $('button#hide_thumbnail').hide();
-    $('#them').show();
-    socket.emit('hide_thumbnails');
+$('.icon#thumbnail').click(function() {
+    isShowingThumbnail = !isShowingThumbnail;
+    if (isShowingThumbnail) {
+        var wrap = document.getElementById('wrap_scroll');
+        $(wrap).css('top', '18%').empty();
+        socket.emit('get_thumbnails');
+    }
+    else {
+        $('#wrap_scroll').empty();
+        $('#wrap_me').empty();
+        $('#wrap_them').empty();
+        $('#them').show();
+        socket.emit('hide_thumbnails');
+    }
 });
 
 $('#move_img').click(function() {
@@ -1250,7 +1270,7 @@ function moveImgClick(isLocal) {
 }
 
 function receiveThumbnails(data){
-    var wrap = document.getElementById('wrap_thumb');
+    var wrap = document.getElementById('wrap_scroll');
 
     var img = $('<img>', {
         id: data.name,
@@ -1262,9 +1282,10 @@ function receiveThumbnails(data){
     img.css("left", "0px");
 
     var imgName = data.name;
+
     img.on('click', function(){
         socket.emit('get_image', imgName);
-        $('#loading').appendTo($(wrap_them)).show();
+        $('#loading').css('top',$(canvas_them).height()/2).css('left',$(canvas_them).width()/2).show();
     });
 }
 
@@ -1301,10 +1322,11 @@ var isShowSmallVideo = true;
 var videoMeWidth,videoMeHeight;
 var isFlipVideo = false;
 var isTakingPhoto = false;
+var isShowingThumbnail = false;
 
 $('.icon#hide_video').click(function(){
-    $('.icon#hide_video').animate({height:"25px",width:'25'},100, function(){
-        $('.icon#hide_video').animate({height:"20px",width:'20'},100);
+    $('.icon#hide_video').animate({height:"35px",width:'35'},100, function(){
+        $('.icon#hide_video').animate({height:"30px",width:'30'},100);
     });
     showSmallVideo();
 });
@@ -1344,22 +1366,42 @@ function displayIcons(){
     var iSwitchCam = $('.icon#switch_cam');
     var iTakePhoto = $('.icon#take_photo');
     var iTakeVideo = $('.icon#take_video');
+    var iCursor = $('.icon#arrow');
+    var iPen = $('.icon#pen');
+    var iPalette = $('.icon#palette');
+    var iEraser = $('.icon#eraser');
+    var iThumbnail = $('.icon#thumbnail');
     var videoMe = $('#me');
 
+    iHideVideo.css('width', '30px').css('height', '30px');
     iHideVideo.css('right', (parseInt(videoMe.css('width')) - parseInt(iHideVideo.css('width'))) +'px');
     iHideVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iHideVideo.css('height'))) +'px');
 
+    iSwapVideo.css('width', '30px').css('height', '30px');
     iSwapVideo.css('right', '0px');
     iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
 
     iSwitchCam.css('top', '2%').css('right', '20%').css('width','40px').css('height', '40px');
     iTakePhoto.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
     iTakeVideo.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
-
     if (isTakingPhoto)
         iTakePhoto.hide();
     else
         iTakeVideo.hide();
+
+    iCursor.css('top', '2%').css('left', '5%').css('width','30px').css('height', '30px');
+    iPen.css('top', '2%').css('left', '5%').css('width','30px').css('height', '30px');
+    iPalette.css('top', '12%').css('left', '5%').css('width','30px').css('height', '30px');
+    iEraser.css('top', '22%').css('left', '5%').css('width','30px').css('height', '30px');
+    if (!sendCursorToThem)
+        iCursor.hide();
+    else {
+        iPen.hide();
+        iPalette.hide();
+        iEraser.hide();
+    }
+
+    iThumbnail.css('top', '12%').css('right', '6%').css('width','30px').css('height', '30px');
 }
 
 $('.icon#swap_video').click(function(){
@@ -1416,7 +1458,7 @@ $('.icon#switch_cam').click(function(){
 });
 
 $('.icon#take_photo').click(function(){
-    //if (localStream) localStream.stop();
+    if (localStream) localStream.stop();
     $('input#icon').click();
 });
 
@@ -1425,4 +1467,32 @@ $('.icon#take_video').click(function(){
     socket.emit("back_video");
     back_video(false);
     isTakingPhoto = false;
+});
+
+$('.icon#arrow').click( function() {
+    sendCursorToThem = false;
+    $('.icon#arrow').hide();
+    $('.icon#pen').show();
+    $('.icon#palette').show();
+    $('.icon#eraser').show();
+});
+
+$('.icon#pen').click( function() {
+    sendCursorToThem = true;
+    $('.icon#arrow').show();
+    $('.icon#pen').hide();
+    $('.icon#palette').hide();
+    $('.icon#eraser').hide();
+});
+
+$('.icon#palette').click(function(){
+    particle.fillColor = '#' + (Math.random() * 0x404040 + 0xaaaaaa | 0).toString(16);
+    $(this).css('background-color', particle.fillColor);
+}).css('background-color', "rgb(200, 22, 161)");
+
+$('.icon#eraser').click(function(){
+    trailTime = 0;
+    mouseIsDown = false;
+    clearTimeout(timeout_id);
+    socket.emit('clear');
 });
