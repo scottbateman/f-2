@@ -79,3 +79,11 @@ canvas {
     height:20px;
     position: fixed;
 }
+
+.picker {
+    z-index: 7;
+    display:none;
+    position: fixed;
+    width:20px;
+    height:20px;
+}

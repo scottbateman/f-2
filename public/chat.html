@@ -7,6 +7,8 @@
 
       <script src="jquery.js"></script>
       <script src="jquery-ui.js"></script>
+      <link rel="stylesheet" type="text/css" href="spectrum/spectrum.css">
+      <script type="text/javascript" src="spectrum/spectrum.js"></script>
       <script src="resize.js"></script>
       <script src="img-touch-canvas.js"></script>
       <script src="hammer.js"></script>
@@ -42,7 +44,7 @@
 
          <div id="wrap_me" class="me" style="overflow:hidden;"></div>
          <div id="wrap_them" class="them" style="overflow:hidden;"></div>
-         <div id="wrap_thumb" class="thumbnail">
+         <div id="wrap_thumb" class="thumbnail" style="background-color: rgba(225, 225, 225, .1);">
              <div id="wrap_scroll" class="thumbnail"></div>
          </div>
          <img id="loading" style="display:none; z-index: 8;position: absolute;top: 50%;left: 50%; width:80;height:80" src="loading1.gif"/>
@@ -56,6 +58,8 @@
          <img id="palette" class="icon" src="image/palette.png"/>
          <img id="eraser" class="icon" src="image/eraser.png"/>
          <img id="thumbnail" class="icon" src="image/thumbnail.png"/>
+         <img id="hand" class="icon" src="image/hand.png"/>
+         <input type='text' value='#ff0031' id='spectrum'/>
       </div>
 
       <div id="controls" style="max-width:50%;display:block;">
@@ -86,7 +90,7 @@
             <input type="checkbox" id="flip_video"/>
          </div>
 
-         <div id="show_line_div">
+         <div id="show_line_div" style="display: none">
             <label id="show_line_label" for="show_line"  style="display: none">Draw</label>
             <input type="checkbox" id="show_line"  style="display: none"/>
             <label id="move_img_label" for="move_img">Move</label>
