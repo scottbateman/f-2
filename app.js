@@ -12,7 +12,6 @@ var os = require('os');
 var holla = require('holla');
 var io = require('socket.io').listen(8981);
 var fs=require('fs');
-var path = require("path");
 var im = require('imagemagick');
 
 var app = express();
