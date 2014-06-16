@@ -5,7 +5,8 @@
 
 var express = require('express');
 var http = require('http');
-var join = require('path').join;
+var path = require('path');
+var join = path.join;
 var os = require('os');
 
 var holla = require('holla');
@@ -276,20 +277,11 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on("get_image", function(imgName){
-	var split = [];
-	if (imgName.indexOf("\\") > -1)
-	{
-            split = imgName.split('\\');
-	}
-	else
-	{
-            split = imgName.split('/');
-	}
+        var fileName = path.join(__dirname, 'temp', path.basename(imgName));
 
-	fileName = __dirname + '/temp/' + split[split.length-1];
+        console.log("dirName: " + __dirname);
+        console.log("imgName: " + imgName);
 
-	console.log("dirName: "+__dirname);
-	console.log("imgName "+imgName);
         var buffer = fs.readFileSync(fileName);
         socket.emit("receive_image", {
             src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
