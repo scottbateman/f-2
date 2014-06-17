@@ -9,7 +9,7 @@ var join = require('path').join;
 var os = require('os');
 
 var holla = require('holla');
-var io = require('socket.io').listen(8081);
+var io = require('socket.io').listen(8981);
 var fs=require('fs');
 var path = require("path");
 var im = require('imagemagick');
@@ -30,7 +30,7 @@ var IP = (function() {
 }());
 
 app.set('ip', process.argv[2] || process.env.IP || IP || '127.0.0.1');
-app.set('port', process.argv[3] || process.env.PORT || 8080);
+app.set('port', process.argv[3] || process.env.PORT || 8980);
 
 app.use(express.favicon());
 app.use(express.logger('dev'));
@@ -276,8 +276,20 @@ io.sockets.on('connection', function(socket) {
     });
 
     socket.on("get_image", function(imgName){
-        var split = imgName.split('\\');
-        var fileName = __dirname + '/temp/' + split[split.length-1];
+	var split = [];
+	if (imgName.indexOf("\\") > -1)
+	{
+            split = imgName.split('\\');
+	}
+	else
+	{
+            split = imgName.split('/');
+	}
+
+	fileName = __dirname + '/temp/' + split[split.length-1];
+
+	console.log("dirName: "+__dirname);
+	console.log("imgName "+imgName);
         var buffer = fs.readFileSync(fileName);
         socket.emit("receive_image", {
             src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
