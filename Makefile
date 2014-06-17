@@ -1,6 +1,6 @@
 build: node_modules ./public/firebase.js ./public/img-touch-canvas.js \
 	./public/jquery.hammer.min.js ./public/jquery.js ./public/resize.js \
-	./public/screenshot.js
+	./public/screenshot.js ./public/hammer.js
 	cd ./node_modules/holla/ && \
 		npm install && \
 		npm install coffee-script@1.6 && \
@@ -28,6 +28,15 @@ build: node_modules ./public/firebase.js ./public/img-touch-canvas.js \
 ./public/screenshot.js:
 	wget -P ./public/ https://www.webrtc-experiment.com/screenshot.js
 
+./public/hammer.js:
+	wget https://github.com/EightMedia/hammer.js/archive/1.1.3.zip
+	unzip 1.1.3.zip
+	rm 1.1.3.zip
+	cp ./hammer.js-1.1.3/hammer.js ./public/
+	cp ./hammer.js-1.1.3/plugins/hammer.showtouches.js ./public/
+	cp ./hammer.js-1.1.3/plugins/hammer.fakemultitouch.js ./public/
+	rm -rf ./hammer.js-1.1.3
+
 node_modules:
 	npm install
 
@@ -35,4 +44,6 @@ clean:
 	@echo "Removing modules and libraries"
 	@rm -rf ./node_modules ./public/holla.js ./public/firebase.js \
 		./public/img-touch-canvas.js ./public/jquery.hammer.min.js \
-		./public/jquery.js ./public/resize.js ./public/screenshot.js
+		./public/jquery.js ./public/resize.js ./public/screenshot.js \
+		./public/hammer.js ./public/hammer.showtouches.js \
+		./public/hammer.fakemultitouch.js

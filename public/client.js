@@ -277,7 +277,7 @@ $(document).ready(function() {
    // });
 
 	//window.location.hostname does not work with "localhost"
-	socket = io.connect("http://" + window.location.hostname + ":8081");
+	socket = io.connect("http://" + window.location.hostname + ":8981");
 	rtc = holla.createClient();
 
    rtc.on("call", function(call) {
