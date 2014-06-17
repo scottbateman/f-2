@@ -3,6 +3,7 @@
  * Module dependencies.
  */
 
+var config = require('./config');
 var express = require('express');
 var http = require('http');
 var path = require('path');
@@ -10,7 +11,7 @@ var join = path.join;
 var os = require('os');
 
 var holla = require('holla');
-var io = require('socket.io').listen(8981);
+var io = require('socket.io').listen(config.ioSocketPort);
 var fs=require('fs');
 var im = require('imagemagick');
 
@@ -29,8 +30,8 @@ var IP = (function() {
    return ip;
 }());
 
-app.set('ip', process.argv[2] || process.env.IP || IP || '127.0.0.1');
-app.set('port', process.argv[3] || process.env.PORT || 8980);
+app.set('ip', process.argv[2] || process.env.IP || IP || config.web.ip);
+app.set('port', process.argv[3] || process.env.PORT || config.web.port);
 
 app.use(express.favicon());
 app.use(express.logger('dev'));
