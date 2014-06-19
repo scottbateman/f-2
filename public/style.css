@@ -63,10 +63,10 @@ canvas {
 }
 
 .thumbnail{
-    top: 18%;
+    top: 10%;
     right: 0px;
     width: 15%;
-    max-height: 37.5%;
+    max-height: 45.5%;
     position: fixed;
     overflow:hidden;
     z-index:4;

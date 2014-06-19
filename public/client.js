@@ -1234,15 +1234,15 @@ var callAgain = function (sourceID){
 var isMovingImg = true;
 var isShowingImg = false;
 $('.icon#thumbnail').click(function() {
-    $('.icon#thumbnail').animate({height:"45px",width:'45px'},100, function(){
-        $('.icon#thumbnail').animate({height:"40px",width:'40px'},100);
+    $('.icon#thumbnail').animate({height:"40px",width:'40px'},100, function(){
+        $('.icon#thumbnail').animate({height:"35px",width:'35px'},100);
     });
     isShowingThumbnail = !isShowingThumbnail;
     if (isShowingThumbnail) {
         var wrap = document.getElementById('wrap_scroll');
-        $(wrap).css('top', '18%').empty();
+        $(wrap).css('top', '10%').empty();
         socket.emit('get_thumbnails');
-        $('#wrap_thumb').animate({'height':"37.5%"},500);
+        $('#wrap_thumb').animate({'height':"45.5%"},500);
         $('.icon#take_photo').hide(animSpeed);
         $('.icon#switch_cam').hide(animSpeed);
     }
@@ -1291,9 +1291,13 @@ function receiveThumbnails(data){
 
     var imgName = data.name;
 
-    img.on('click', function(){
-        socket.emit('get_image', imgName);
-        $('#loading').css('top', $(canvas_them).height() / 2).css('left', $(canvas_them).width() / 2).show();
+    img.on('click', function(ev){
+        var y = ev.pageY;
+        var height = parseInt($('#them').css('height'));
+        if (y < height) {
+            socket.emit('get_image', imgName);
+            $('#loading').css('top', $(canvas_them).height() / 2).css('left', $(canvas_them).width() / 2).show();
+        }
     });
 }
 
@@ -1396,10 +1400,10 @@ function displayIcons(){
     iSwapVideo.css('right', '0px');
     iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
 
-    iThumbnail.css('top', '10%').css('right', '5%').css('width','40px').css('height', '40px');
-    iSwitchCam.css('width','40px').css('height', '40px');
-    iTakePhoto.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
-    iTakeVideo.css('top', '2%').css('right', '6%').css('width','30px').css('height', '30px');
+    iThumbnail.css('top', '2%').css('right', '4%').css('width','35px').css('height', '35px');
+    iSwitchCam.css('width','35px').css('height', '35px');
+    iTakePhoto.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
+    iTakeVideo.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
     if (isTakingPhoto) {
         iTakePhoto.hide();
         videoMe.hide();
@@ -1438,7 +1442,7 @@ function displayIcons(){
         iSwitchCam.css('top', '2%');
     }
     else {
-        iSwitchCam.css('left','auto').css('right', (parseInt(videoMe.css('width'))/2 - parseInt(iSwitchCam.css('width'))/2) +'px');
+        iSwitchCam.css('left','auto').css('right', (parseInt(videoMe.css('width'))/2 - parseInt(iSwitchCam.css('width'))/1.5) +'px');
         iSwitchCam.css('top', 'auto').css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwitchCam.css('height'))) +'px');
     }
 
@@ -1500,8 +1504,8 @@ $('.icon#swap_video').click(function(){
 });
 
 $('.icon#switch_cam').click(function(){
-    $('.icon#switch_cam').animate({height:"45px",width:'45px'},100, function(){
-        $('.icon#switch_cam').animate({height:"40px",width:'40px'},100);
+    $('.icon#switch_cam').animate({height:"40px",width:'40px'},100, function(){
+        $('.icon#switch_cam').animate({height:"35px",width:'35px'},100);
     });
     camera1 = !camera1;
     if (camera1)
@@ -1513,8 +1517,8 @@ $('.icon#switch_cam').click(function(){
 });
 
 $('.icon#take_photo').click(function(){
-    $('.icon#take_photo').animate({height:"35px",width:'35px'},100, function(){
-        $('.icon#take_photo').animate({height:"30px",width:'30px'},100);
+    $('.icon#take_photo').animate({height:"40px",width:'40px'},100, function(){
+        $('.icon#take_photo').animate({height:"35px",width:'35px'},100);
     });
     if (localStream) localStream.stop();
     $('#me').hide();
@@ -1522,8 +1526,8 @@ $('.icon#take_photo').click(function(){
 });
 
 $('.icon#take_video').click(function(){
-    $('.icon#take_video').animate({height:"35px",width:'35px'},100, function(){
-        $('.icon#take_video').animate({height:"30px",width:'30px'},100);
+    $('.icon#take_video').animate({height:"40px",width:'40px'},100, function(){
+        $('.icon#take_video').animate({height:"35px",width:'35px'},100);
     });
     $('.icon').hide(animSpeed);
     socket.emit("back_video");
