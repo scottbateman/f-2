@@ -78,6 +78,11 @@ canvas {
     width:20px;
     height:20px;
     position: fixed;
+    border-color: transparent;
+    border-radius: 50%;
+    background-image: url('image/Circle_Blue.png');
+    background-size: contain;
+    background-repeat: no-repeat;
 }
 
 .picker {
