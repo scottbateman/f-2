@@ -311,4 +311,16 @@ io.sockets.on('connection', function(socket) {
     socket.on('hide_thumbnails', function(){
         io.sockets.socket(names[socket.id]).emit("hide_thumbnails");
     });
+
+    socket.on('end_call', function(){
+        io.sockets.socket(names[socket.id]).emit("end_call");
+    });
+
+    socket.on('recall', function(){
+        io.sockets.socket(names[socket.id]).emit("recall");
+    });
+
+    socket.on('ready_recall', function(){
+        io.sockets.socket(names[socket.id]).emit("ready_recall");
+    });
 });

@@ -215,7 +215,8 @@ function createFullStream(){
          init_drawing();
       }
 
-      localStream.pipe($("#me"));
+      if (!isFlipVideo) localStream.pipe($("#me"));
+      else localStream.pipe($("#them"));
 
       if(!$("#picture").val()){
          $(".me").show();
@@ -304,7 +305,10 @@ $(document).ready(function() {
             remoteUser[userID] = key;
             userID++;
             displayIcons();
-            return remoteStream.pipe($("#them"));
+
+            if (!isFlipVideo) remoteStream.pipe($("#them"));
+            else remoteStream.pipe($("#me"));
+            return remoteStream;
          });
       }
    });
@@ -442,7 +446,9 @@ $(document).ready(function() {
                      remoteUser[userID] = key;
                      userID++;
                      displayIcons();
-                     return stream.pipe($("#them"));
+                     if (!isFlipVideo) stream.pipe($("#them"));
+                     else stream.pipe($("#me"));
+                     return stream;
                   });
                }
             });
@@ -881,6 +887,16 @@ $(document).ready(function() {
     socket.on('hide_thumbnails', function() {
         removeImg();
     });
+
+
+    socket.on('end_call', endCall);
+    socket.on('recall', function(){
+        createNewStream()
+    });
+    socket.on('ready_recall', function(){
+        callAgain(0)
+    });
+
 });
 
 function init_drawing() {
@@ -1192,7 +1208,8 @@ var callAgain = function (sourceID){
             throw error;
         }
         localStream = stream;
-        stream.pipe($('#me'));
+        if (!isFlipVideo) stream.pipe($('#me'));
+        else stream.pipe($('#them'));
 
         rtc.createCall(function(err, call) {
             webrtcCall = call;
@@ -1221,10 +1238,12 @@ var callAgain = function (sourceID){
                     remoteUser[userID] = key;
                     userID++;
                     displayIcons();
-                    return stream.pipe($("#them"));
+                    if (!isFlipVideo) stream.pipe($("#them"));
+                    else stream.pipe($("#me"));
+                    return stream;
                 });
             }
-            isFlipVideo = false;
+            //isFlipVideo = false;
         });
     });
 };
@@ -1336,6 +1355,7 @@ var videoMeWidth,videoMeHeight;
 var isFlipVideo = false;
 var isTakingPhoto = false;
 var isShowingThumbnail = false;
+var isCalling = true;
 
 $('.icon#hide_video').click(function(){
     $('.icon#hide_video').animate({height:"35px",width:'35'},100, function(){
@@ -1406,6 +1426,7 @@ function displayIcons(){
     iTakeVideo.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
     if (isTakingPhoto) {
         iTakePhoto.hide();
+        iThumbnail.hide();
         videoMe.hide();
         videoThem.hide();
     }
@@ -1434,7 +1455,8 @@ function displayIcons(){
         iCursor.css('border-color', 'transparent');
         iHand.css('border-color', 'red').css('opacity', '1');
 
-        $('#them').hide()
+        $('#them').hide();
+        iSwitchCam.hide();
     }
 
     if (isFlipVideo) {
@@ -1464,7 +1486,8 @@ function displayIcons(){
 
 $('.icon#swap_video').click(function(){
     isFlipVideo = !isFlipVideo;
-    if (currentImg){
+
+    if (currentImg && isShowingImg){
         $(currentImg).css('top', '0px');
         $(currentImg).css('left', '0px');
         var parentDiv = $(currentImg).parent();
@@ -1473,8 +1496,7 @@ $('.icon#swap_video').click(function(){
             resizeImg(wrap_them, currentImg);
         }
         else {
-            if ($('#hide_thumbnail').is(":visible"))
-                $(currentImg).appendTo($(wrap_me));
+            $(currentImg).appendTo($(wrap_me));
             resizeImg(wrap_me, currentImg);
         }
         originW = parseInt( currentImg.css( 'width' ) );
@@ -1483,8 +1505,9 @@ $('.icon#swap_video').click(function(){
 
     var me = $('#me');
     var them = $('#them');
-    me.hide(animSpeed*0.5);
-    them.hide(animSpeed *0.5);
+    me.hide(currentImg && isShowingImg? 0 :animSpeed * 0.5);
+    them.hide(currentImg && isShowingImg? 0 :animSpeed * 0.5);
+
     $('.icon').hide();
     $('#canvas_me').hide();
     $('#canvas_them').hide();
@@ -1494,8 +1517,8 @@ $('.icon#swap_video').click(function(){
     them.attr('id', 'me').attr('class', 'me');
     if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
 
-    me.show(animSpeed);
-    them.show(animSpeed, function(){
+    me.show(currentImg && isShowingImg? 0 :animSpeed);
+    them.show(currentImg && isShowingImg? 0:animSpeed, function(){
         $('#canvas_me').show();
         $('#canvas_them').show();
         resizeCanvas();
@@ -1599,6 +1622,7 @@ $('.icon#eraser').click(function(){
 $("#spectrum").spectrum({
     replacerClassName: 'picker',
     showPalette:true,
+    showPaletteOnly:true,
     palette: [
         ['black', 'white', 'blanchedalmond',
             'rgb(255, 128, 0);'],
@@ -1610,5 +1634,36 @@ $("#spectrum").spectrum({
 });
 
 $('.icon#hangup').click( function(){
-    webrtcCall.end();
+    isCalling = !isCalling;
+    if (!isCalling) {
+        endCall();
+        socket.emit('end_call');
+        $('.icon#hangup').attr('src', 'image/phone.png');
+    }
+    else {
+        $('.icon#hangup').attr('src', 'image/hangup.png');
+        //$('.icon#hangup').css('opacity', '0.2');
+        socket.emit('recall');
+    }
 });
+
+function endCall(){
+    webrtcCall.releaseLocalStream();
+    remoteStream.stop();
+    localStream.stop();
+    //webrtcCall.end();
+};
+
+function createNewStream() {
+    var cb = function(err, stream) {
+        if (err)    throw err;
+        localStream = stream;
+
+        if (!isFlipVideo) localStream.pipe($("#me"));
+        else localStream.pipe($("#them"));
+
+        socket.emit("ready_recall");
+    };
+
+    holla.createStream({audio: false, video: true}, cb);
+};
