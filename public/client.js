@@ -1261,7 +1261,7 @@ $('.icon#thumbnail').click(function() {
         var wrap = document.getElementById('wrap_scroll');
         $(wrap).css('top', '10%').empty();
         socket.emit('get_thumbnails');
-        $('#wrap_thumb').animate({'height':"45.5%"},500);
+        $('#wrap_thumb').animate({'height':"60%"},500);
         $('.icon#take_photo').hide(animSpeed);
         $('.icon#switch_cam').hide(animSpeed);
     }
@@ -1312,7 +1312,7 @@ function receiveThumbnails(data){
 
     img.on('click', function(ev){
         var y = ev.pageY;
-        var height = parseInt($('#them').css('height'));
+        var height = $(document).height() * 0.7;
         if (y < height) {
             socket.emit('get_image', imgName);
             $('#loading').css('top', $(canvas_them).height() / 2).css('left', $(canvas_them).width() / 2).show();
@@ -1460,11 +1460,11 @@ function displayIcons(){
     }
 
     if (isFlipVideo) {
-        iSwitchCam.css('left', (parseInt(videoThem.css('width'))/2 - parseInt(iSwitchCam.css('width'))/4) +'px');
+        iSwitchCam.css('left', (parseInt(videoThem.css('width'))/2)/2 +'px');
         iSwitchCam.css('top', '2%');
     }
     else {
-        iSwitchCam.css('left','auto').css('right', (parseInt(videoMe.css('width'))/2 - parseInt(iSwitchCam.css('width'))/1.5) +'px');
+        iSwitchCam.css('left','auto').css('right', (parseInt(videoMe.css('width'))/2 - parseInt(iSwitchCam.css('width'))/2) +'px');
         iSwitchCam.css('top', 'auto').css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwitchCam.css('height'))) +'px');
     }
 
@@ -1473,7 +1473,7 @@ function displayIcons(){
         $('.icon#switch_cam').hide();
     }
 
-    iHangUp.css('bottom', '12%').css('left', '25%').css('width','35px').css('height', '35px');
+    iHangUp.css('bottom', '2%').css('left', '25%').css('width','35px').css('height', '35px');
 
     $('.icon').each(function(e) {
         var element = $('.icon')[e];
@@ -1482,6 +1482,9 @@ function displayIcons(){
         //$(element).css('border-radius', w/2+2+'px' );
         //$(element).css('border-radius', '50%' );
     });
+
+    //if ($(document).width() > $(document).height())
+    //    $('.them').css('left', '0px');
 }
 
 $('.icon#swap_video').click(function(){

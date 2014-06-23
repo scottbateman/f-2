@@ -3,19 +3,20 @@ body {
 }
 
 .them {
-  left: 0px;
   top: 0px;
-  max-width: 100%;
-  max-height: 60%;
+
+  max-height: 100%;
   position: fixed;
   display: none;
   overflow:hidden;
+  height: 100%;
+  left: -25%;
 }
 
 .me {
   bottom: 0px;
   right: 0px;
-  max-width: 50%;
+  max-width: 30%;
   max-height: 40%;
   min-width: 10%;
   position: fixed;
@@ -66,7 +67,7 @@ canvas {
     top: 10%;
     right: 0px;
     width: 15%;
-    max-height: 45.5%;
+    max-height: 60%;
     position: fixed;
     overflow:hidden;
     z-index:4;
@@ -92,9 +93,3 @@ canvas {
     width:20px;
     height:20px;
 }
-/*
-#them {
-    -webkit-transform: scaleX(2);
-    -webkit-transform: scaleY(2);
-}
-*/
