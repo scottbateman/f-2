@@ -225,7 +225,15 @@ function createFullStream(){
       socket.emit("ready");
    };
 
-   holla.createStream({audio: false, video: true}, cb);
+    var constrain = {   audio: false,
+                        "video": {
+                            "mandatory": {
+                                "minWidth": "720",
+                                "maxHeight": "540"
+                            },
+                            "optional": []
+                        }};
+   holla.createStream(constrain, cb);
 }
 
 function hideCursor() {
@@ -1001,7 +1009,6 @@ function displayPicture(at, src) {
         src: src
     }).appendTo($(wrap)).show();
     currentImg = img;
-    $('video#them').hide();
     $(wrap_me).css("z-index","3").show();
     $(wrap_them).css("z-index","3").show();
 
@@ -1009,6 +1016,7 @@ function displayPicture(at, src) {
     img.css("top", "0px");
     img.css("left", "0px");
 
+    originRatio = undefined;
     resizeImg(wrap,img);
 
     imgWidth = img.width();
@@ -1035,7 +1043,7 @@ var min   = 0.5,
     scale = 1,
     lastX = 0,
     lastY = 0;
-var currentImg,wrap_me,wrap_them, originW, originH,lastScrollY;
+var currentImg,wrap_me,wrap_them, originW, originH,lastScrollY, originRatio;
 
 Hammer.plugins.fakeMultitouch();
 Hammer.plugins.showTouches();
@@ -1062,7 +1070,9 @@ function gestureHandler(event) {
 
             socket.emit('move_image', {
                 top: parseInt($(targetImg).css( 'top' )) / parseInt(wrap.css( 'height' )) ,
-                left: parseInt($(targetImg).css('left')) / parseInt(wrap.css( 'width' ))
+                left: parseInt($(targetImg).css('left')) / parseInt(wrap.css( 'width' )) ,
+                width: parseInt($(targetImg).css( 'width' )) / parseInt(wrap.css( 'width' )) ,
+                ratio: parseInt($(targetImg).css( 'width' )) / parseInt($(targetImg).css( 'height' ))
             });
 
             break;
@@ -1107,7 +1117,9 @@ function gestureHandler(event) {
             socket.emit('move_image', {
                 top: imgY / parseInt(wrap.css( 'height' )) ,
                 left: imgX / parseInt(wrap.css( 'width' )),
-                imgScale: imgWidth / originW
+                width: parseInt($(targetImg).css( 'width' )) / parseInt(wrap.css( 'width' )) ,
+                ratio: parseInt($(targetImg).css( 'width' )) / parseInt($(targetImg).css( 'height' ))
+                //imgScale: imgWidth / originW
             });
             break;
 
@@ -1134,6 +1146,8 @@ function moveImage(data) {
         if (data.top) {
             currentImg.css('top', data.top * $(wrap_them).height() + 'px');
             currentImg.css('left', data.left * $(wrap_them).width()+ 'px');
+            currentImg.css('width', data.width * $(wrap_them).width()+ 'px');
+            currentImg.css('height', parseInt(currentImg.css('width'))/data.ratio+ 'px');
         }
         if (data.imgScale) {
             currentImg.css('width', data.imgScale * originW + 'px');
@@ -1202,7 +1216,19 @@ videoSelect.onchange = function() {
 var callAgain = function (sourceID){
     if (localStream) localStream.stop();
     if (remoteStream) remoteStream.stop();
-    holla.createStream({video:{optional: [{sourceId: sourceIDs[sourceID]}]},audio:false}, function(error, stream){
+
+    var constrain = {   audio: false,
+        "video": {
+            "mandatory": {
+                "minWidth": "720",
+                "maxHeight": "540"
+            },
+            "optional": [
+                {sourceId: sourceIDs[sourceID]}
+            ]
+        }};
+
+    holla.createStream(constrain, function(error, stream){
         if (error) {
             alert(error);
             throw error;
@@ -1282,6 +1308,7 @@ function removeImg() {
     $('#wrap_me').empty();
     $('#wrap_them').empty();
     $('#them').show();
+    $('#me').show();
     isShowingImg = false;
     stopMovingImg();
     $('.icon#hand').css('opacity', '0.15');
@@ -1325,6 +1352,7 @@ function receiveImage(data){
         displayPicture(isFlipVideo ? "them" : "me", data.src);
     }
     else {
+        $('#them').hide();
         displayPicture(isFlipVideo ? "me" : "them", data.src);
         originW = parseInt( currentImg.css( 'width' ) );
         originH = parseInt( currentImg.css( 'height' ) );
@@ -1334,17 +1362,25 @@ function receiveImage(data){
 
 function resizeImg(wrapDiv,img)
 {
-    var ratio = parseInt(img.css("width")) / parseInt(img.css("height"));
+    var ratio;
+    if (!originRatio) {
+        ratio = parseInt(img.css("width")) / parseInt(img.css("height"));
+        originRatio = ratio;
+    }
+    else
+        ratio = originRatio;
     if (ratio > 1)
     {
         img.css("width", ($(wrapDiv).width())+"px");
-        img.css("height", (ratio/img.width)+"px");
+        img.css("height", (parseInt(img.css("width"))/ratio)+"px");
     }
     else
     {
         img.css("height", ($(wrapDiv).height())+'px');
-        img.css("width", (ratio*img.height)+"px");
+        img.css("width", (ratio*parseInt(img.css("height")))+"px");
     }
+    img.css('top', '0px');
+    img.css('left', '0px');
 }
 
 //////////////////////////////
@@ -1455,8 +1491,13 @@ function displayIcons(){
         iCursor.css('border-color', 'transparent');
         iHand.css('border-color', 'red').css('opacity', '1');
 
-        $('#them').hide();
         iSwitchCam.hide();
+        if (!isFlipVideo) {
+            $('#me').hide();
+        }
+        else {
+            $('#them').hide();
+        }
     }
 
     if (isFlipVideo) {
@@ -1490,22 +1531,6 @@ function displayIcons(){
 $('.icon#swap_video').click(function(){
     isFlipVideo = !isFlipVideo;
 
-    if (currentImg && isShowingImg){
-        $(currentImg).css('top', '0px');
-        $(currentImg).css('left', '0px');
-        var parentDiv = $(currentImg).parent();
-        if (parentDiv.attr('class') == 'me') {
-            $(currentImg).appendTo($(wrap_them));
-            resizeImg(wrap_them, currentImg);
-        }
-        else {
-            $(currentImg).appendTo($(wrap_me));
-            resizeImg(wrap_me, currentImg);
-        }
-        originW = parseInt( currentImg.css( 'width' ) );
-        originH = parseInt( currentImg.css( 'height' ) );
-    }
-
     var me = $('#me');
     var them = $('#them');
     me.hide(currentImg && isShowingImg? 0 :animSpeed * 0.5);
@@ -1525,6 +1550,21 @@ $('.icon#swap_video').click(function(){
         $('#canvas_me').show();
         $('#canvas_them').show();
         resizeCanvas();
+
+        if (currentImg && isShowingImg){
+            var parentDiv = $(currentImg).parent();
+            if (parentDiv.attr('class') == 'me') {
+                $(currentImg).appendTo($(wrap_them));
+                resizeImg(wrap_them, currentImg);
+            }
+            else {
+                $(currentImg).appendTo($(wrap_me));
+                resizeImg(wrap_me, currentImg);
+            }
+            originW = parseInt( currentImg.css( 'width' ) );
+            originH = parseInt( currentImg.css( 'height' ) );
+        }
+
         displayIcons();
     });
 });
@@ -1668,5 +1708,13 @@ function createNewStream() {
         socket.emit("ready_recall");
     };
 
-    holla.createStream({audio: false, video: true}, cb);
+    var constrain = {   audio: false,
+                        "video": {
+                            "mandatory": {
+                                "minWidth": "720",
+                                "maxHeight": "540"
+                            },
+                            "optional": []
+                    }};
+    holla.createStream(constrain, cb);
 };
