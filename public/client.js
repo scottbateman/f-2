@@ -1,3 +1,8 @@
+var userID = location.search.split('userID=')[1];
+if (!userID)
+    userID = -1;
+
+var isSimple = false;
 //Set what is enabled
 var video_drawing = true;
 var high_res_drawing = false;
@@ -749,14 +754,23 @@ $(document).ready(function() {
 				'mouseIsDown': mouseIsDown,
 				'draw_at': draw_at
 			});
+
+
 		}
+        if (sendCursorToThem)
+            dbLog(EventType.startCursor, userID);
+        else
+            dbLog(EventType.startDraw, userID);
 	});
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(){
       mouseIsDown = false;
       if (sendCursorToThem) {
          socket.emit('hide_cursor');
+         dbLog(EventType.stopCursor, userID);
       }
+      else
+         dbLog(EventType.stopDraw, userID);
    });
 
 	$("#img_canvas").bind("touchend mouseup", function(){
@@ -1290,6 +1304,7 @@ $('.icon#thumbnail').click(function() {
         $('#wrap_thumb').animate({'height':"60%"},500);
         $('.icon#take_photo').hide(animSpeed);
         $('.icon#switch_cam').hide(animSpeed);
+        dbLog(EventType.showThumbnails, userID);
     }
     else {
         $('#wrap_thumb').animate({'height':"0%"},500, function(){
@@ -1300,6 +1315,7 @@ $('.icon#thumbnail').click(function() {
             $('.icon#switch_cam').show(animSpeed);
 
             removeImg();
+            dbLog(EventType.hideThumbnails, userID);
         })
     }
 });
@@ -1398,6 +1414,7 @@ $('.icon#hide_video').click(function(){
         $('.icon#hide_video').animate({height:"30px",width:'30'},100);
     });
     showSmallVideo();
+    displayIcons();
 });
 
 function showSmallVideo() {
@@ -1416,6 +1433,7 @@ function showSmallVideo() {
         myCanvas.show();
         isShowSmallVideo = true;
         $('.icon#hide_video').attr('src', 'image/arrow_hide.png');
+        dbLog(EventType.hideSmallVideo, userID);
     } else {
         videoMeWidth = parseInt(me.css('width'));
         videoMeHeight = parseInt(me.css('height'));
@@ -1428,6 +1446,7 @@ function showSmallVideo() {
         isShowSmallVideo = false;
         if(!isFlipVideo) $('.icon#switch_cam').hide();
         $('.icon#hide_video').attr('src', 'image/arrow_show.png');
+        dbLog(EventType.showSmallVideo, userID);
     }
 }
 
@@ -1524,8 +1543,12 @@ function displayIcons(){
         //$(element).css('border-radius', '50%' );
     });
 
-    //if ($(document).width() > $(document).height())
-    //    $('.them').css('left', '0px');
+    // Simple version of the app
+    if (isSimple) {
+        $('.icon').hide();
+        iSwapVideo.show();
+        iHideVideo.show();
+    }
 }
 
 $('.icon#swap_video').click(function(){
@@ -1566,6 +1589,7 @@ $('.icon#swap_video').click(function(){
         }
 
         displayIcons();
+        dbLog(EventType.swapVideos, userID);
     });
 });
 
@@ -1579,6 +1603,7 @@ $('.icon#switch_cam').click(function(){
     else
         videoSource = 1;
 
+    dbLog(EventType.switchCameras, userID);
     callAgain(videoSource);
 });
 
@@ -1589,6 +1614,7 @@ $('.icon#take_photo').click(function(){
     if (localStream) localStream.stop();
     $('#me').hide();
     $('input#icon').click();
+    dbLog(EventType.takePhoto, userID);
 });
 
 $('.icon#take_video').click(function(){
@@ -1598,6 +1624,7 @@ $('.icon#take_video').click(function(){
     $('.icon').hide(animSpeed);
     socket.emit("back_video");
     back_video(false);
+    dbLog(EventType.backToVideo, userID);
 });
 
 $('.icon#hand').click(function(){
@@ -1610,6 +1637,7 @@ $('.icon#hand').click(function(){
         $('.icon#arrow').css('border-color', 'transparent');
         $('.icon#pen').css('border-color', 'transparent');
         socket.emit('start_move_image');
+        dbLog(EventType.selectHand, userID);
     }
 });
 
@@ -1622,6 +1650,7 @@ $('.icon#arrow').click( function() {
     $('.icon#pen').css('border-color', 'transparent');
     $('.picker').hide(animSpeed, 'easeOutBounce');
     stopMovingImg();
+    dbLog(EventType.selectCursor, userID);
 });
 
 $('.icon#pen').click( function() {
@@ -1633,6 +1662,7 @@ $('.icon#pen').click( function() {
     $('.icon#pen').css('border-color', 'red');
     $('.picker').show(animSpeed, 'easeOutBounce');
     stopMovingImg();
+    dbLog(EventType.selectPen, userID);
 });
 
 function stopMovingImg() {
@@ -1673,6 +1703,7 @@ $("#spectrum").spectrum({
     ],
     change: function(color) {
         particle.fillColor = color.toHexString();
+        dbLog(EventType.selectColor, userID);
     }
 });
 
@@ -1682,11 +1713,13 @@ $('.icon#hangup').click( function(){
         endCall();
         socket.emit('end_call');
         $('.icon#hangup').attr('src', 'image/phone.png');
+        dbLog(EventType.stopCall, userID);
     }
     else {
         $('.icon#hangup').attr('src', 'image/hangup.png');
         //$('.icon#hangup').css('opacity', '0.2');
         socket.emit('recall');
+        dbLog(EventType.reCall, userID);
     }
 });
 
@@ -1718,3 +1751,34 @@ function createNewStream() {
                     }};
     holla.createStream(constrain, cb);
 };
+
+/////////////////////////////////////
+// Database log
+
+var EventType = {   swapVideos: "button_down_video_swap",
+                    hideSmallVideo: "button_down_video_small_hide",
+                    showSmallVideo: "button_down_video_small_show",
+                    switchCameras: "button_down_camera_switch",
+                    showThumbnails: "button_down_thumbnail_show",
+                    hideThumbnails: "button_down_thumbnail_hide",
+                    takePhoto: "button_down_photo_take",
+                    backToVideo: "button_down_video_back",
+                    selectCursor: "button_down_cursor_select",
+                    selectPen: "button_down_pen_select",
+                    selectHand: "button_down_hand_select",
+                    selectColor: "button_down_color_select",
+                    startDraw: "finger_down_line_draw",
+                    stopDraw: "finger_up_line_draw",
+                    startCursor: "finger_down_cursor_move",
+                    stopCursor: "finger_up_cursor_move",
+                    stopCall: "button_down_phone_stop",
+                    reCall: "button_down_phone_call"
+                };
+function dbLog(eventType, userID, info) {
+    var jsonData = {"even_type": eventType,
+                    "user_id": userID,
+                    "info": info,
+                    "time_stamp": new Date().toISOString()
+                    };
+    socket.emit('log', JSON.stringify(jsonData));
+}

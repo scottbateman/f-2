@@ -3,5 +3,11 @@
       "ip": "127.0.0.1",
       "port": 8980
    },
-   "ioSocketPort": 8981
+   "ioSocketPort": 8981,
+   "mongoDB": {
+       "name": "f2db",
+       "ip": "127.0.0.1",
+       "port": "27017",
+       "log_collection": "Log"
+   }
 }

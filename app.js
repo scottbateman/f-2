@@ -15,6 +15,30 @@ var io = require('socket.io').listen(config.ioSocketPort);
 var fs=require('fs');
 var im = require('imagemagick');
 
+//////////////////////////////////////
+// Database
+var mongo = require('mongodb');
+var mongoSV = new mongo.Server(config.mongoDB.ip, config.mongoDB.port, {auto_reconnect: true});
+var mongoDB = new mongo.Db(config.mongoDB.name, mongoSV);
+var mongoLog = undefined;
+
+mongoDB.open(function(err, mongoDB) {
+    if(!err) {
+        console.log("Connected to database");
+        mongoDB.collection(config.mongoDB.log_collection, function(err, collectionref) {
+            if (!err)
+                mongoLog = collectionref;
+            else
+                console.log('Could not find mongodb Log collection');
+        });
+    }
+    else {
+        console.log("Could not connect to database");
+        console.log(err);
+    }
+});
+////////////////////////////////////
+
 var app = express();
 
 var IP = (function() {
@@ -60,12 +84,17 @@ function size(obj) {
    return size;
 };
 
-// Create temp folders to store images
+// Create temp folders to store images, database
 if(!fs.existsSync(__dirname +'/temp/')) {
     fs.mkdirSync(__dirname + '/temp/', 0766, function (err) {
         if (err) console.log(err);
     });
     fs.mkdirSync(__dirname + '/temp/thumb/', 0766, function (err) {
+        if (err) console.log(err);
+    });
+}
+if(!fs.existsSync(__dirname +'/database/')) {
+    fs.mkdirSync(__dirname + '/database/', 0766, function (err) {
         if (err) console.log(err);
     });
 }
@@ -323,4 +352,18 @@ io.sockets.on('connection', function(socket) {
     socket.on('ready_recall', function(){
         io.sockets.socket(names[socket.id]).emit("ready_recall");
     });
+
+    socket.on('log', function(data) {
+        if (mongoLog) {
+            console.log("log data: ", data);
+            var obj = JSON.parse(data);
+            mongoLog.insert(obj, function (err, result) {
+                if (!err)
+                    console.log('log data inserted');
+                else
+                    console.log(err);
+            });
+
+        }
+    })
 });
