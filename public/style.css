@@ -65,7 +65,7 @@ canvas {
 .thumbnail{
     top: 10%;
     right: 0px;
-    width: 15%;
+    width: 50px;
     max-height: 60%;
     position: fixed;
     overflow:hidden;

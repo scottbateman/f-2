@@ -232,10 +232,12 @@ function createFullStream(){
 
     var constrain = {   audio: false,
                         "video": {
+
                             "mandatory": {
                                 "minWidth": "720",
                                 "maxHeight": "540"
                             },
+
                             "optional": []
                         }};
    holla.createStream(constrain, cb);
@@ -642,9 +644,10 @@ $(document).ready(function() {
 
          $('.icon#take_video').show();
          $('.icon#take_photo').hide();
-         isTakingPhoto = true;
          $('.icon#switch_cam').hide();
          $('.icon#thumbnail').hide();
+         isTakingPhoto = true;
+         isPhotoSender = true;
          /*
          var reader = new FileReader();
          reader.file = files[0];
@@ -689,7 +692,10 @@ $(document).ready(function() {
    socket.on('send_icon', function(data) {
       $('.icon#switch_cam').hide();
       $('.icon#thumbnail').hide();
+      $('#them').hide();
       displayPicture(isFlipVideo ? "me" : "them", data.src);
+      isPhotoSender = false;
+      dbLog(EventType.receiveImage, userID, {name: data.name})
    });
 
 	$(window).resize(function() {
@@ -747,7 +753,7 @@ $(document).ready(function() {
 			particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
 
 			mouseIsDown = true;
-		
+
 			socket.emit('mousedown', {
 				'x': particle.position.x,
 				'y': particle.position.y,
@@ -758,19 +764,26 @@ $(document).ready(function() {
 
 		}
         if (sendCursorToThem)
-            dbLog(EventType.startCursor, userID);
+            dbLog(EventType.startCursor, userID, {x: e.changedTouches[0].offsetX,
+                                                  y: e.changedTouches[0].offsetY});
         else
-            dbLog(EventType.startDraw, userID);
+            dbLog(EventType.startDraw, userID, {color: particle.fillColor,
+                                                x: e.changedTouches[0].offsetX,
+                                                y: e.changedTouches[0].offsetY});
 	});
 	
-   $("#canvas_me, #canvas_them").bind("touchend mouseup", function(){
+   $("#canvas_me, #canvas_them").bind("touchend mouseup", function(ev){
+      ev.preventDefault()
       mouseIsDown = false;
       if (sendCursorToThem) {
          socket.emit('hide_cursor');
-         dbLog(EventType.stopCursor, userID);
+         dbLog(EventType.stopCursor, userID, {x: ev.changedTouches[0].offsetX,
+                                              y: ev.changedTouches[0].offsetY});
       }
       else
-         dbLog(EventType.stopDraw, userID);
+         dbLog(EventType.stopDraw, userID, {color: particle.fillColor,
+                                            x: ev.changedTouches[0].offsetX,
+                                            y: ev.changedTouches[0].offsetY});
    });
 
 	$("#img_canvas").bind("touchend mouseup", function(){
@@ -809,7 +822,6 @@ $(document).ready(function() {
 			$("#canvas_" + flip).height() * data.y2, 
 			data.size, 
 			data.color);
-			
 		trailTime = counter + data.trailTime;
 	});
 
@@ -898,12 +910,30 @@ $(document).ready(function() {
     socket.on('move_image', moveImage);
 
     socket.on('start_move_image', function(){
-        $(wrap_them).css("z-index", "3");
         isMovingImg = true;
+        $(wrap_them).css("z-index", "3");
+        $(wrap_me).css("z-index", "3");
+
+        $('.icon#hand').css('border-color', 'red');
+        $('.icon#arrow').css('border-color', 'transparent');
+        $('.icon#pen').css('border-color', 'transparent');
     });
     socket.on('stop_move_image', function() {
         $(wrap_them).css("z-index", "1");
+        $(wrap_me).css("z-index", "1");
         isMovingImg = false;
+
+        if (!sendCursorToThem) {
+            $('.icon#pen').css('border-color', 'red');
+            $('.icon#arrow').css('border-color', 'transparent');
+            $('.picker').show(animSpeed);
+        }
+        else {
+            $('.icon#arrow').css('border-color', 'red');
+            $('.icon#pen').css('border-color', 'transparent');
+            $('.picker').hide(animSpeed, 'easeOutBounce');
+        }
+        $('.icon#hand').css('border-color', 'transparent');
     });
 
     socket.on('hide_thumbnails', function() {
@@ -965,8 +995,8 @@ function draw(at, x1, y1, x2, y2, size, color){
 
 function moveCursor(at, x, y) {
    $('#cursor')
-      .css('left', $('#' + at).offset().left + x)
-      .css('top', $('#' + at).offset().top + y);
+      .css('left', $('#canvas_' + at).offset().left + x)
+      .css('top', $('#canvas_' + at).offset().top + y);
 }
 
 function resizeCanvas(){
@@ -998,6 +1028,7 @@ function back_video(isReceiver){
     $('video#them').show();
     isTakingPhoto = false;
     isShowingImg = false;
+    isPhotoSender = false;
     displayIcons();
     resizeCanvas();
     if (!isReceiver)
@@ -1045,7 +1076,7 @@ function displayPicture(at, src) {
 
     isShowingImg = true;
     isMovingImg = true;
-    displayIcons();
+    video.hide();
 }
 
 ///////////////////////////////////////////////////////
@@ -1092,6 +1123,8 @@ function gestureHandler(event) {
             break;
 
         case 'release':
+            checkImgBoundary(targetImg, wrap);
+            /*
             imgWidth = parseInt( $(targetImg).css( 'width' ) );
             imgHeight = parseInt( $(targetImg).css( 'height' ) );
 
@@ -1125,12 +1158,13 @@ function gestureHandler(event) {
                 else if (imgY > divHeight - imgHeight)
                     imgY = divHeight - imgHeight;
             }
+
             $(targetImg).css("left", imgX );
             $(targetImg).css("top", imgY);
-
+            */
             socket.emit('move_image', {
-                top: imgY / parseInt(wrap.css( 'height' )) ,
-                left: imgX / parseInt(wrap.css( 'width' )),
+                top: parseInt($(targetImg).css( 'top' )) / parseInt(wrap.css( 'height' )) ,
+                left: parseInt($(targetImg).css( 'left' )) / parseInt(wrap.css( 'width' )),
                 width: parseInt($(targetImg).css( 'width' )) / parseInt(wrap.css( 'width' )) ,
                 ratio: parseInt($(targetImg).css( 'width' )) / parseInt($(targetImg).css( 'height' ))
                 //imgScale: imgWidth / originW
@@ -1167,9 +1201,48 @@ function moveImage(data) {
             currentImg.css('width', data.imgScale * originW + 'px');
             currentImg.css('height', data.imgScale * originH + 'px');
         }
+        checkImgBoundary(currentImg, currentImg.parent());
     }
 }
 
+function checkImgBoundary(targetImg, wrap) {
+    imgWidth = parseInt( $(targetImg).css( 'width' ) );
+    imgHeight = parseInt( $(targetImg).css( 'height' ) );
+
+    var divWidth = parseInt(wrap.css( 'width' ));
+    var divHeight = parseInt(wrap.css( 'height' ));
+    var divX = parseInt(wrap.offset().left);
+    var divY = parseInt(wrap.offset().top);
+    var imgX = $(targetImg).offset().left - divX;
+    var imgY = $(targetImg).offset().top - divY;
+
+    if (imgWidth >= divWidth){
+        if (imgX < divWidth-imgWidth)
+            imgX = divWidth-imgWidth;
+        else if (imgX > 0)
+            imgX = 0;
+    }
+    if (imgHeight >= divHeight){
+        if (imgY > 0)
+            imgY = 0;
+        else if (imgY < divHeight - imgHeight)
+            imgY = divHeight-imgHeight;
+    }
+    if (imgWidth < divWidth && imgHeight < divHeight)
+    {
+        if (imgX < 0)
+            imgX = 0;
+        else if (imgX > divWidth - imgWidth)
+            imgX = divWidth - imgWidth;
+        if (imgY < 0)
+            imgY = 0;
+        else if (imgY > divHeight - imgHeight)
+            imgY = divHeight - imgHeight;
+    }
+
+    $(targetImg).css("left", imgX );
+    $(targetImg).css("top", imgY);
+}
 $('#wrap_scroll').css('max-height', '500%');
 $('#wrap_thumb').css('height', '0%');
 Hammer($('#wrap_thumb').get(0), {
@@ -1292,6 +1365,7 @@ var callAgain = function (sourceID){
 // Image thumbnails
 var isMovingImg = true;
 var isShowingImg = false;
+var isPhotoSender = false;
 $('.icon#thumbnail').click(function() {
     $('.icon#thumbnail').animate({height:"40px",width:'40px'},100, function(){
         $('.icon#thumbnail').animate({height:"35px",width:'35px'},100);
@@ -1326,6 +1400,7 @@ function removeImg() {
     $('#them').show();
     $('#me').show();
     isShowingImg = false;
+    isPhotoSender = false;
     stopMovingImg();
     $('.icon#hand').css('opacity', '0.15');
     if (!sendCursorToThem) {
@@ -1358,7 +1433,8 @@ function receiveThumbnails(data){
         var height = $(document).height() * 0.7;
         if (y < height) {
             socket.emit('get_image', imgName);
-            $('#loading').css('top', $(canvas_them).height() / 2).css('left', $(canvas_them).width() / 2).show();
+            $('#loading').css('top', $(document).height() / 2).css('left', $(document).width() / 2).show();
+            dbLog(EventType.selectThumbnail, userID, {name: imgName})
         }
     });
 }
@@ -1366,12 +1442,14 @@ function receiveThumbnails(data){
 function receiveImage(data){
     if (data.local) {
         displayPicture(isFlipVideo ? "them" : "me", data.src);
+        isPhotoSender = true;
     }
     else {
-        $('#them').hide();
         displayPicture(isFlipVideo ? "me" : "them", data.src);
         originW = parseInt( currentImg.css( 'width' ) );
         originH = parseInt( currentImg.css( 'height' ) );
+        isPhotoSender = false;
+        dbLog(EventType.receiveImage, userID, {name: data.name})
     }
     $('#loading').hide();
 }
@@ -1414,7 +1492,7 @@ $('.icon#hide_video').click(function(){
         $('.icon#hide_video').animate({height:"30px",width:'30'},100);
     });
     showSmallVideo();
-    displayIcons();
+    //displayIcons();
 });
 
 function showSmallVideo() {
@@ -1423,30 +1501,44 @@ function showSmallVideo() {
     var iHideVideo = $('.icon#hide_video');
     var iSwapVideo = $('.icon#swap_video');
     if (!isShowSmallVideo) {
+        myCanvas.show(animSpeed*0.5);
+        me.show(animSpeed, function() {
+            $('.icon#switch_cam').show();
+            if (isShowingImg) {
+                if($('#wrap_me').children().length > 0) {
+                    currentImg.show();
+                }
+            }
+        });
         iHideVideo.animate({
             right:(videoMeWidth - parseInt(iHideVideo.css('width')))+'px',
             bottom:(videoMeHeight - parseInt(iHideVideo.css('height')))+'px'
-        },animSpeed*0.3, function() { $('.icon#switch_cam').show(); });
+        },animSpeed*0.5);
         iSwapVideo.animate({bottom:(videoMeHeight - parseInt(iSwapVideo.css('width')))+'px'},animSpeed*0.5);
         iSwapVideo.show(animSpeed);
-        me.show(animSpeed);
-        myCanvas.show();
+
         isShowSmallVideo = true;
         $('.icon#hide_video').attr('src', 'image/arrow_hide.png');
-        dbLog(EventType.hideSmallVideo, userID);
+        dbLog(EventType.showSmallVideo, userID);
     } else {
+        if (isShowingImg) {
+            if($('#wrap_me').children().length > 0) {
+                currentImg.hide();
+            }
+        }
+        myCanvas.hide();
+
         videoMeWidth = parseInt(me.css('width'));
         videoMeHeight = parseInt(me.css('height'));
-        iHideVideo.animate({right:"0px",bottom:'0px'},animSpeed*0.5, function(){
-            myCanvas.hide();
-        });
+        iHideVideo.animate({right:"0px",bottom:'0px'},animSpeed*0.5);
         iSwapVideo.animate({bottom:'0px'},animSpeed*0.5);
         iSwapVideo.hide(animSpeed);
         me.hide(animSpeed);
+
         isShowSmallVideo = false;
         if(!isFlipVideo) $('.icon#switch_cam').hide();
         $('.icon#hide_video').attr('src', 'image/arrow_show.png');
-        dbLog(EventType.showSmallVideo, userID);
+        dbLog(EventType.hideSmallVideo, userID);
     }
 }
 
@@ -1475,15 +1567,13 @@ function displayIcons(){
     iSwapVideo.css('right', '0px');
     iSwapVideo.css('bottom', (parseInt(videoMe.css('height')) - parseInt(iSwapVideo.css('height')))+'px');
 
-    iThumbnail.css('top', '2%').css('right', '4%').css('width','35px').css('height', '35px');
+    iThumbnail.css('top', '2%').css('right', '2%').css('width','35px').css('height', '35px');
     iSwitchCam.css('width','35px').css('height', '35px');
     iTakePhoto.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
     iTakeVideo.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
     if (isTakingPhoto) {
         iTakePhoto.hide();
         iThumbnail.hide();
-        videoMe.hide();
-        videoThem.hide();
     }
     else
         iTakeVideo.hide();
@@ -1506,16 +1596,32 @@ function displayIcons(){
         iHand.css('opacity', '0.15').css('border-color', 'transparent');
     }
     else {
-        iPen.css('border-color', 'transparent');
-        iCursor.css('border-color', 'transparent');
-        iHand.css('border-color', 'red').css('opacity', '1');
+        if (isMovingImg) {
+            $('.icon#hand').css('border-color', 'red');
+            $('.icon#arrow').css('border-color', 'transparent');
+            $('.icon#pen').css('border-color', 'transparent');
+        }
+        else {
+            if (!sendCursorToThem) {
+                $('.icon#pen').css('border-color', 'red');
+                $('.icon#arrow').css('border-color', 'transparent');
+                $('.picker').show();
+            }
+            else {
+                $('.icon#arrow').css('border-color', 'red');
+                $('.icon#pen').css('border-color', 'transparent');
+                $('.picker').hide();
+            }
+            $('.icon#hand').css('border-color', 'transparent');
+        }
+        iHand.css('opacity', '1');
 
         iSwitchCam.hide();
         if (!isFlipVideo) {
-            $('#me').hide();
+            isPhotoSender? $('#me').hide(): $('#them').hide();
         }
         else {
-            $('#them').hide();
+            isPhotoSender? $('#them').hide(): $('#me').hide();
         }
     }
 
@@ -1612,7 +1718,6 @@ $('.icon#take_photo').click(function(){
         $('.icon#take_photo').animate({height:"35px",width:'35px'},100);
     });
     if (localStream) localStream.stop();
-    $('#me').hide();
     $('input#icon').click();
     dbLog(EventType.takePhoto, userID);
 });
@@ -1772,7 +1877,9 @@ var EventType = {   swapVideos: "button_down_video_swap",
                     startCursor: "finger_down_cursor_move",
                     stopCursor: "finger_up_cursor_move",
                     stopCall: "button_down_phone_stop",
-                    reCall: "button_down_phone_call"
+                    reCall: "button_down_phone_call",
+                    selectThumbnail: "finger_down_thumbnail_select",
+                    receiveImage: "image_receive"
                 };
 function dbLog(eventType, userID, info) {
     var jsonData = {"even_type": eventType,
