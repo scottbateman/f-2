@@ -693,11 +693,10 @@ $(document).ready(function() {
       $('.icon#switch_cam').hide();
       $('.icon#thumbnail').hide();
       $('#them').hide();
-      displayPicture(isFlipVideo ? "me" : "them", data.src);
       isPhotoSender = false;
+      displayPicture(isFlipVideo ? "me" : "them", data.src);
       dbLog(EventType.receiveImage, userID, {name: data.name})
    });
-
 	$(window).resize(function() {
 		setSize = true;
 	});
@@ -764,26 +763,23 @@ $(document).ready(function() {
 
 		}
         if (sendCursorToThem)
-            dbLog(EventType.startCursor, userID, {x: e.changedTouches[0].offsetX,
-                                                  y: e.changedTouches[0].offsetY});
+            dbLog(EventType.startCursor, userID, {x: mouseX, y:mouseY});
         else
             dbLog(EventType.startDraw, userID, {color: particle.fillColor,
-                                                x: e.changedTouches[0].offsetX,
-                                                y: e.changedTouches[0].offsetY});
+                                                x: mouseX,
+                                                y: mouseY});
 	});
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(ev){
-      ev.preventDefault()
       mouseIsDown = false;
       if (sendCursorToThem) {
          socket.emit('hide_cursor');
-         dbLog(EventType.stopCursor, userID, {x: ev.changedTouches[0].offsetX,
-                                              y: ev.changedTouches[0].offsetY});
+         dbLog(EventType.stopCursor, userID, {x: mouseX, y:mouseY});
       }
       else
          dbLog(EventType.stopDraw, userID, {color: particle.fillColor,
-                                            x: ev.changedTouches[0].offsetX,
-                                            y: ev.changedTouches[0].offsetY});
+                                            x: mouseX,
+                                            y: mouseY});
    });
 
 	$("#img_canvas").bind("touchend mouseup", function(){
@@ -970,7 +966,7 @@ function init_drawing() {
 			offset: { x: 0, y: 0 },
 			shift: { x: mouseX, y: mouseY },
 			speed: 0.3,
-			fillColor: "rgb(200, 22, 161)"
+			fillColor: "#ee82ee"
 		};
 
 		main_interval();
@@ -1076,7 +1072,8 @@ function displayPicture(at, src) {
 
     isShowingImg = true;
     isMovingImg = true;
-    video.hide();
+    //video.hide();
+    displayIcons();
 }
 
 ///////////////////////////////////////////////////////
@@ -1441,14 +1438,14 @@ function receiveThumbnails(data){
 
 function receiveImage(data){
     if (data.local) {
-        displayPicture(isFlipVideo ? "them" : "me", data.src);
         isPhotoSender = true;
+        displayPicture(isFlipVideo ? "them" : "me", data.src);
     }
     else {
+        isPhotoSender = false;
         displayPicture(isFlipVideo ? "me" : "them", data.src);
         originW = parseInt( currentImg.css( 'width' ) );
         originH = parseInt( currentImg.css( 'height' ) );
-        isPhotoSender = false;
         dbLog(EventType.receiveImage, userID, {name: data.name})
     }
     $('#loading').hide();
@@ -1474,7 +1471,8 @@ function resizeImg(wrapDiv,img)
         img.css("width", (ratio*parseInt(img.css("height")))+"px");
     }
     img.css('top', '0px');
-    img.css('left', '0px');
+    //img.css('left', ($(wrapDiv).width() - $(img).width())/2 + 'px');
+    img.css('left','0px');
 }
 
 //////////////////////////////
@@ -1804,7 +1802,7 @@ $("#spectrum").spectrum({
     palette: [
         ['black', 'white', 'blanchedalmond',
             'rgb(255, 128, 0);'],
-        ['yellow', 'green', 'blue', 'violet']
+        ['yellow', 'green', 'blue', 'red']
     ],
     change: function(color) {
         particle.fillColor = color.toHexString();
@@ -1882,7 +1880,7 @@ var EventType = {   swapVideos: "button_down_video_swap",
                     receiveImage: "image_receive"
                 };
 function dbLog(eventType, userID, info) {
-    var jsonData = {"even_type": eventType,
+    var jsonData = {"event_type": eventType,
                     "user_id": userID,
                     "info": info,
                     "time_stamp": new Date().toISOString()

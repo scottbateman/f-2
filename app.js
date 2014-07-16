@@ -18,6 +18,7 @@ var im = require('imagemagick');
 //////////////////////////////////////
 // Database
 var mongo = require('mongodb');
+var json2csv = require('json2csv');
 var mongoSV = new mongo.Server(config.mongoDB.ip, config.mongoDB.port, {auto_reconnect: true});
 var mongoDB = new mongo.Db(config.mongoDB.name, mongoSV);
 var mongoLog = undefined;
@@ -26,8 +27,42 @@ mongoDB.open(function(err, mongoDB) {
     if(!err) {
         console.log("Connected to database");
         mongoDB.collection(config.mongoDB.log_collection, function(err, collectionref) {
-            if (!err)
+            if (!err) {
                 mongoLog = collectionref;
+                mongoLog.find({},function(err, logs) {
+                    logs.each(function (err, log) {
+                            //console.log(log);
+                        }
+                    );
+                    logs.toArray(function(err, array) {
+                        var intCount = array.length;
+                        if(intCount > 0) {
+                            var strJson = "";
+                            for (var i = 0; i < intCount;) {
+                                var info = array[i].info? JSON.stringify(array[i].info): '" "';
+                                strJson += '{"event_type":"' + array[i].event_type + '"' +
+                                           ',"user_id":"' + array[i].user_id + '"' +
+                                           ',"time_stamp":"' + array[i].time_stamp + '"' +
+                                           ',"info":' + info  +
+                                           '}';
+                                i = i + 1;
+                                if (i < intCount) {
+                                    strJson += ',';
+                                }
+                            }
+                            strJson = '[' + strJson + "]";
+                            json2csv({data: JSON.parse(strJson), fields: ['event_type', 'user_id', 'time_stamp', 'info']}, function(err, csv) {
+                                if (err) console.log(err);
+                                fs.writeFile(__dirname+'/database/log.csv', csv, function(err) {
+                                    if (err) throw err;
+                                    console.log('csv file saved');
+                                });
+                            });
+
+                        }
+                    });
+                });
+            }
             else
                 console.log('Could not find mongodb Log collection');
         });
