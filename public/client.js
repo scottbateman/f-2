@@ -134,7 +134,7 @@ mainInterval = setInterval(function(){
          at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
       });
    }
-}, 1000 / 60);
+}, 1000 / 500);
 }
 
 function prepare_photo(){
@@ -639,14 +639,13 @@ $(document).ready(function() {
 
          if (webrtcCall){
              webrtcCall.releaseLocalStream();
-             //localStream.getVideoTracks()[0].enabled = false;
          }
 
-         $('.icon#take_video').show();
-         $('.icon#take_photo').hide();
-         $('.icon#switch_cam').hide();
-         $('.icon#thumbnail').hide();
-         isTakingPhoto = true;
+         //$('.icon#take_video').show();
+         //$('.icon#take_photo').hide();
+         //$('.icon#switch_cam').hide();
+         //$('.icon#thumbnail').hide();
+         //isTakingPhoto = true;
          isPhotoSender = true;
          /*
          var reader = new FileReader();
@@ -686,6 +685,7 @@ $(document).ready(function() {
                   reader.readAsDataURL(files[i]);
               })(files[i]);
           }
+          //$('input#icon').attr('value','')
       }
    });
 
@@ -942,7 +942,7 @@ $(document).ready(function() {
         createNewStream()
     });
     socket.on('ready_recall', function(){
-        callAgain(0)
+        callAgain(videoSource)
     });
 
 });
@@ -956,7 +956,10 @@ function init_drawing() {
     wrap_me = document.getElementById('wrap_me');
     wrap_them = document.getElementById('wrap_them');
 
-	if (canvas_me && canvas_me.getContext) {
+    $(canvas_them).css('opacity', '0.18');
+    $(canvas_me).css('opacity', '0.18');
+
+    if (canvas_me && canvas_me.getContext) {
 		me = canvas_me.getContext('2d');
 		them = canvas_them.getContext('2d');
 
@@ -1028,7 +1031,7 @@ function back_video(isReceiver){
     displayIcons();
     resizeCanvas();
     if (!isReceiver)
-        callAgain(0);
+        callAgain(videoSource);
 }
 
 function displayPicture(at, src) {
@@ -1373,7 +1376,7 @@ $('.icon#thumbnail').click(function() {
         $(wrap).css('top', '10%').empty();
         socket.emit('get_thumbnails');
         $('#wrap_thumb').animate({'height':"60%"},500);
-        $('.icon#take_photo').hide(animSpeed);
+        //$('.icon#take_photo').hide(animSpeed);
         $('.icon#switch_cam').hide(animSpeed);
         dbLog(EventType.showThumbnails, userID);
     }
@@ -1387,6 +1390,12 @@ $('.icon#thumbnail').click(function() {
 
             removeImg();
             dbLog(EventType.hideThumbnails, userID);
+
+            if (isTakingPhoto) {
+                socket.emit("back_video");
+                back_video(false);
+                dbLog(EventType.backToVideo, userID);
+            }
         })
     }
 });
@@ -1471,8 +1480,8 @@ function resizeImg(wrapDiv,img)
         img.css("width", (ratio*parseInt(img.css("height")))+"px");
     }
     img.css('top', '0px');
-    //img.css('left', ($(wrapDiv).width() - $(img).width())/2 + 'px');
-    img.css('left','0px');
+    img.css('left', $(wrapDiv).width()/2 - $(img).width()/2 + 'px');
+    //img.css('left','0px');
 }
 
 //////////////////////////////
@@ -1568,14 +1577,15 @@ function displayIcons(){
     iThumbnail.css('top', '2%').css('right', '2%').css('width','35px').css('height', '35px');
     iSwitchCam.css('width','35px').css('height', '35px');
     iTakePhoto.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
-    iTakeVideo.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px');
+    iTakeVideo.css('top', '2%').css('right', '20%').css('width','35px').css('height', '35px').hide();
+    /*
     if (isTakingPhoto) {
         iTakePhoto.hide();
         iThumbnail.hide();
     }
     else
         iTakeVideo.hide();
-
+    */
     iCursor.css('bottom', '22%').css('left', '5%').css('width','30px').css('height', '30px').css('border-style', 'solid');
     iPen.css('bottom', '12%').css('left', '5%').css('width','30px').css('height', '30px').css('border-style', 'solid');
     iPalette.css('bottom', '2%').css('left', '5%').css('width','30px').css('height', '30px').hide();
@@ -1633,7 +1643,7 @@ function displayIcons(){
     }
 
     if (isShowingThumbnail) {
-        $('.icon#take_photo').hide();
+        //$('.icon#take_photo').hide();
         $('.icon#switch_cam').hide();
     }
 
@@ -1717,6 +1727,18 @@ $('.icon#take_photo').click(function(){
     });
     if (localStream) localStream.stop();
     $('input#icon').click();
+    isTakingPhoto = true;
+
+    // Show thumbnail list
+    if (!isShowingThumbnail) {
+        isShowingThumbnail = true;
+        var wrap = document.getElementById('wrap_scroll');
+        $(wrap).css('top', '10%').empty();
+        socket.emit('get_thumbnails');
+        $('#wrap_thumb').animate({'height':"60%"},500);
+        $('.icon#switch_cam').hide(animSpeed);
+    }
+
     dbLog(EventType.takePhoto, userID);
 });
 
