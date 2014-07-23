@@ -82,6 +82,8 @@ var cursorRemoteTime = 0;
 var isFirstCursor = false;
 var isCursorTrace = true;
 
+var isTakeVideoFrame = true;
+
 function send_image(){
 if(sync){
    socket.emit("sync_photo_position", {
@@ -1826,9 +1828,26 @@ $('.icon#take_photo').click(function(){
     $('.icon#take_photo').animate({height:"40px",width:'40px'},100, function(){
         $('.icon#take_photo').animate({height:"35px",width:'35px'},100);
     });
-    if (localStream) localStream.stop();
-    $('input#icon').click();
-    isTakingPhoto = true;
+
+    if (!isTakeVideoFrame) {
+        if (localStream) localStream.stop();
+        $('input#icon').click();
+        isTakingPhoto = true;
+    }
+    else {
+        isPhotoSender = true;
+        var context2d = canvas_them.getContext('2d');
+        context2d.drawImage(document.querySelector('#them'), 0, 0, canvas_them.width, canvas_them.height);
+        var imgData = canvas_them.toDataURL("image/jpeg");
+
+        socket.emit('send_icon', {
+            src: imgData,
+            name: new Date().getTime()+'.jpg'
+        });
+
+        displayPicture(isFlipVideo ? "them" : "me", imgData);
+        //canvas_them.getContext('2d').clearRect ( 0 , 0 ,  canvas_them.width, canvas_them.height);
+    }
 
     // Show thumbnail list
     if (!isShowingThumbnail) {
