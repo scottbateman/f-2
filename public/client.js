@@ -65,7 +65,7 @@ var sendCursorToThem = true;
 
 var lastDrawX, lastDrawY;
 var mainTimeInterval = 50;
-var drawPixelInterval = 900;
+var drawPixelInterval = 5;
 var drawFadeTime = 50;
 var drawFadeStartTime = 1000;
 var isDrawFade = false;
@@ -789,6 +789,8 @@ $(document).ready(function() {
 			if(draw_at == "high_res"){
 				draw_at = "them";
 			}
+
+            isDrawFade = false;
 		}
 	});
 

@@ -285,6 +285,12 @@ io.sockets.on('connection', function(socket) {
            }, function(err, stdout, stderr){
                if (err) throw err;
                console.log('resized image ');
+
+               var buffer = fs.readFileSync(__dirname +'/temp/thumb/'+data.name);
+               socket.emit("receive_thumbnails", {
+                   src: "data:image/jpeg;base64,"+ buffer .toString("base64"),
+                   name: data.name
+               });
            });
        });
    });
