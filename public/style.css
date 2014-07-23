@@ -92,3 +92,8 @@ canvas {
     width:20px;
     height:20px;
 }
+
+.cursorArrow {
+    z-index: 6;
+    position: absolute;
+}

@@ -135,9 +135,13 @@ if(!fs.existsSync(__dirname +'/database/')) {
 }
 
 var names = new Array();
-
+var counter = 0;
 function fix_things(){
-   //console.log(names);
+   counter++;
+   if (counter > 6) {
+       console.log(names);
+       counter = 0;
+   }
 
    var clients = io.sockets.clients();
 
@@ -206,6 +210,10 @@ io.sockets.on('connection', function(socket) {
 
    console.log("connected");
    console.log(names);
+
+   socket.on('mousedown', function(data) {
+      socket.broadcast.emit('mousedown', data);
+   });
 
    socket.on('draw', function(data) {
       socket.broadcast.emit('draw', data);

@@ -63,6 +63,25 @@ var sync = true;
 
 var sendCursorToThem = true;
 
+var lastDrawX, lastDrawY;
+var mainTimeInterval = 50;
+var drawPixelInterval = 900;
+var drawFadeTime = 50;
+var drawFadeStartTime = 1000;
+var isDrawFade = false;
+
+var cursorArray = [];
+var cursorIndex = 0;
+var cursorInterval = 40;
+var cursorFadeTime = 50;
+var cursorFadeStartTime = 100;
+var cursorMax = 10;
+var isCursorFade = false;
+var cursorTime = 0;
+var cursorRemoteTime = 0;
+var isFirstCursor = false;
+var isCursorTrace = true;
+
 function send_image(){
 if(sync){
    socket.emit("sync_photo_position", {
@@ -92,16 +111,24 @@ if(sync){
 
 function main_interval(){
 mainInterval = setInterval(function(){
-   counter++;
+   counter+= mainTimeInterval;
+   cursorTime += mainTimeInterval;
+   cursorRemoteTime += mainTimeInterval;
 
-   if(counter >= trailTime){
-      me.fillStyle = 'rgba(0,0,0,0.11)';
-      me.fillRect(0, 0, me.canvas.width, me.canvas.height);
+   if (counter >= drawFadeStartTime) {
+       isDrawFade = true;
+   }
+   if (isDrawFade) {
+       if (counter >= drawFadeTime) {
+           me.fillStyle = 'rgba(0,0,0,0.2)';
+           me.fillRect(0, 0, me.canvas.width, me.canvas.height);
 
-      if(them){
-         them.fillStyle = 'rgba(0,0,0,0.11)';
-         them.fillRect(0, 0, them.canvas.width, them.canvas.height);
-      }
+           if (them) {
+               them.fillStyle = 'rgba(0,0,0,0.2)';
+               them.fillRect(0, 0, them.canvas.width, them.canvas.height);
+           }
+           counter = 0;
+       }
    }
 
    if(mouseIsDown && draw && !sendCursorToThem) {
@@ -113,28 +140,63 @@ mainInterval = setInterval(function(){
       particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
       particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
 
-      draw(draw_at, lp.x, lp.y, particle.position.x, particle.position.y, particle.size, particle.fillColor);
+      if (((lp.x - lastDrawX)*(lp.x - lastDrawX) + (lp.y - lastDrawY)*(lp.y - lastDrawY)) > drawPixelInterval) {
+          //draw(draw_at, lp.x, lp.y, particle.position.x, particle.position.y, particle.size, particle.fillColor);
+          draw(draw_at, lastDrawX, lastDrawY, lp.x, lp.y, particle.size, particle.fillColor);
 
-      trailTime = counter + Math.pow(10, $("#time").val());
+          trailTime = counter + Math.pow(10, $("#time").val());
 
-      socket.emit('draw', {
-         'x1': lp.x / $("#canvas_" + draw_at).width(),
-         'y1': lp.y / $("#canvas_" + draw_at).height(),
-         'x2': particle.position.x / $("#canvas_" + draw_at).width(),
-         'y2': particle.position.y / $("#canvas_" + draw_at).height(),
-         'size': particle.size,
-         'color': particle.fillColor,
-         'trailTime': Math.pow(10, $("#time").val()),
-         'draw_at': isFlipVideo ? (draw_at == "me" ? "them" : "me") : draw_at
-      });
+          socket.emit('draw', {
+
+              //'x1': lp.x / $("#canvas_" + draw_at).width(),
+              //'y1': lp.y / $("#canvas_" + draw_at).height(),
+              //'x2': particle.position.x / $("#canvas_" + draw_at).width(),
+              //'y2': particle.position.y / $("#canvas_" + draw_at).height(),
+
+              'x1': lastDrawX / $("#canvas_" + draw_at).width(),
+              'y1': lastDrawY / $("#canvas_" + draw_at).height(),
+              'x2': lp.x / $("#canvas_" + draw_at).width(),
+              'y2': lp.y / $("#canvas_" + draw_at).height(),
+              'size': particle.size,
+              'color': particle.fillColor,
+              'trailTime': Math.pow(10, $("#time").val()),
+              'draw_at': isFlipVideo ? (draw_at == "me" ? "them" : "me") : draw_at
+          });
+          lastDrawX = lp.x;
+          lastDrawY = lp.y;
+       }
    } else if (mouseIsDown && sendCursorToThem) {
-      socket.emit('show_cursor', {
-         x: mouseX / $("#canvas_" + draw_at).width(),
-         y: mouseY / $("#canvas_" + draw_at).height(),
-         at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
-      });
+        if (cursorTime > cursorInterval) {
+            cursorTime = 0;
+            socket.emit('show_cursor', {
+                x: mouseX / $("#canvas_" + draw_at).width(),
+                y: mouseY / $("#canvas_" + draw_at).height(),
+                at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
+            });
+        }
    }
-}, 1000 / 500);
+
+        if (cursorRemoteTime > cursorFadeStartTime)
+            isCursorFade = true;
+        if (cursorArray.length > 0) {
+            if (cursorRemoteTime > cursorFadeTime) {
+                // fade the oldest cursor
+                if (isCursorFade) {
+                    var cursorDiv = cursorArray.shift();
+                    if (cursorDiv)
+                        cursorDiv.empty();
+                    var parentCanvas = cursorDiv.parent();
+                    //parentCanvas.remove(cursorDiv);
+                    cursorRemoteTime = 0;
+                }
+            }
+        }
+        else {
+            isCursorFade = false
+            isFirstCursor = false;
+        }
+
+}, mainTimeInterval);
 }
 
 function prepare_photo(){
@@ -235,6 +297,8 @@ function createFullStream(){
 
                             "mandatory": {
                                 "minWidth": "720",
+                                "minHeight": "540",
+                                "maxWidth": "720",
                                 "maxHeight": "540"
                             },
 
@@ -246,6 +310,7 @@ function createFullStream(){
 function hideCursor() {
    console.log('hiding cursor');
    $('#cursor').hide();
+   //isFirstCursor = false;
 }
 
 $(document).ready(function() {
@@ -748,18 +813,17 @@ $(document).ready(function() {
 			particle.shift.x += (mouseX - particle.shift.x);
 			particle.shift.y += (mouseY - particle.shift.y);
 
-			particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
-			particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
+            lastDrawX = particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
+			lastDrawY = particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
 
 			mouseIsDown = true;
-
+            isDrawFade = false;
 			socket.emit('mousedown', {
 				'x': particle.position.x,
 				'y': particle.position.y,
 				'mouseIsDown': mouseIsDown,
 				'draw_at': draw_at
 			});
-
 
 		}
         if (sendCursorToThem)
@@ -772,6 +836,8 @@ $(document).ready(function() {
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(ev){
       mouseIsDown = false;
+      isDrawFade = false;
+      counter = 0;
       if (sendCursorToThem) {
          socket.emit('hide_cursor');
          dbLog(EventType.stopCursor, userID, {x: mouseX, y:mouseY});
@@ -818,16 +884,44 @@ $(document).ready(function() {
 			$("#canvas_" + flip).height() * data.y2, 
 			data.size, 
 			data.color);
-		trailTime = counter + data.trailTime;
+		//trailTime = counter + data.trailTime;
+        counter = 0;
+        isDrawFade = false;
 	});
 
    socket.on('show_cursor', function(data) {
-      $('#cursor').show();
-      var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
+      if (!isCursorTrace) {
+          $('#cursor').show();
+          var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
 
-      moveCursor(at,
-         data.x * $('#canvas_' + at).width(),
-         data.y * $('#canvas_' + at).height());
+          moveCursor(at,
+                  data.x * $('#canvas_' + at).width(),
+                  data.y * $('#canvas_' + at).height());
+      }
+      else {
+          if (cursorArray.length < cursorMax) {
+              var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
+              var cursorDiv = $('<div>', {
+                  id: 'cursorDiv' + cursorIndex,
+                  class: 'cursorArrow'
+              }).appendTo(document.body).show();
+              var cursorImg = $('<img>', {
+                  id: 'cursor' + cursorIndex,
+                  src: "/cursor.png"
+              }).appendTo(cursorDiv).show();
+
+              var cursorX = data.x * $('#canvas_' + at).width();
+              var cursorY = data.y * $('#canvas_' + at).height();
+              cursorDiv.css('left', $('#canvas_' + at).offset().left + cursorX)
+                  .css('top', $('#canvas_' + at).offset().top + cursorY);
+              cursorArray.push(cursorDiv);
+          }
+
+          if (!isFirstCursor) {
+              isFirstCursor = true;
+              cursorRemoteTime = 0;
+          }
+      }
    });
 
 	socket.on("clear", function(){
@@ -945,6 +1039,10 @@ $(document).ready(function() {
         callAgain(videoSource)
     });
 
+    socket.om('mousedown', function() {
+        isDrawFade = false;
+        counter = 0;
+    })
 });
 
 function init_drawing() {
@@ -996,6 +1094,7 @@ function moveCursor(at, x, y) {
    $('#cursor')
       .css('left', $('#canvas_' + at).offset().left + x)
       .css('top', $('#canvas_' + at).offset().top + y);
+   //console.log(x,y);
 }
 
 function resizeCanvas(){
@@ -1308,6 +1407,8 @@ var callAgain = function (sourceID){
         "video": {
             "mandatory": {
                 "minWidth": "720",
+                "minHeight": "540",
+                "maxWidth": "720",
                 "maxHeight": "540"
             },
             "optional": [
@@ -1870,6 +1971,8 @@ function createNewStream() {
                         "video": {
                             "mandatory": {
                                 "minWidth": "720",
+                                "minHeight": "540",
+                                "maxWidth": "720",
                                 "maxHeight": "540"
                             },
                             "optional": []
