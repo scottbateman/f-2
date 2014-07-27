@@ -67,8 +67,14 @@ var lastDrawX, lastDrawY;
 var mainTimeInterval = 50;
 var drawPixelInterval = 5;
 var drawFadeTime = 50;
-var drawFadeStartTime = 1000;
+var drawFadeStartTime = 1500;
 var isDrawFade = false;
+var isDrawing = false;
+var drawFadeCounter = 0;
+var isMeFading = false;
+var isThemFading = false;
+var isDrawingOnMe = false;
+var isDrawingOnThem = false;
 
 var cursorArray = [];
 var cursorIndex = 0;
@@ -83,6 +89,7 @@ var isFirstCursor = false;
 var isCursorTrace = true;
 
 var isTakeVideoFrame = true;
+var isDrawOnFrame = true;
 
 function send_image(){
 if(sync){
@@ -111,17 +118,59 @@ if(sync){
 //    } : null;
 // }
 
+function fadeFrame(canvasName) {
+
+    var targetCanvas = document.getElementById('canvas_'+canvasName);
+    $('#'+canvasName).show(); //video
+
+    $(targetCanvas).animate({'opacity':'0'},1200,function(){
+        console.log('4');
+        var context2d = targetCanvas.getContext('2d');
+        context2d.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+        $(targetCanvas).css('opacity', '0.3');
+        isDrawFade = false;
+        isDrawing = false;
+        counter = 0;
+        if (canvasName == 'me') {
+            isMeFading = false;
+            isDrawingOnMe = false;
+        }
+        else if (canvasName == 'them') {
+            isThemFading = false;
+            isDrawingOnThem = false;
+        }
+    });
+}
+
 function main_interval(){
 mainInterval = setInterval(function(){
-   counter+= mainTimeInterval;
+   if (isDrawing && !mouseIsDown) {
+       counter += mainTimeInterval;
+   }
+   drawFadeCounter += mainTimeInterval;
    cursorTime += mainTimeInterval;
    cursorRemoteTime += mainTimeInterval;
 
    if (counter >= drawFadeStartTime) {
        isDrawFade = true;
+       isDrawing = false;
+       counter = 0;
+       if (isDrawOnFrame) {
+           if (isDrawFade && !mouseIsDown) {
+               if (!isThemFading) {
+                   fadeFrame('them');
+                   isThemFading = true;
+               }
+               if (!isMeFading) {
+                   fadeFrame('me');
+                   isMeFading = true;
+               }
+           }
+       }
    }
-   if (isDrawFade) {
-       if (counter >= drawFadeTime) {
+
+   if (isDrawFade && !mouseIsDown && !isDrawOnFrame) {
+       if (drawFadeCounter >= drawFadeTime) {
            me.fillStyle = 'rgba(0,0,0,0.2)';
            me.fillRect(0, 0, me.canvas.width, me.canvas.height);
 
@@ -129,7 +178,7 @@ mainInterval = setInterval(function(){
                them.fillStyle = 'rgba(0,0,0,0.2)';
                them.fillRect(0, 0, them.canvas.width, them.canvas.height);
            }
-           counter = 0;
+           drawFadeCounter = 0;
        }
    }
 
@@ -544,6 +593,8 @@ $(document).ready(function() {
 
    socket.on('hide_cursor', function() {
       hideCursor();
+      $(canvas_them).css('opacity', '0.3');
+      $(canvas_me).css('opacity', '0.3');
    });
 
 	$(window).bind('orientationchange', function(e){
@@ -795,47 +846,81 @@ $(document).ready(function() {
 	});
 
 	$("#canvas_me, #canvas_them").bind("touchstart mousedown", function(e){
-		if(!stopDrawing){
-			if(e.originalEvent.touches){
-				mouseX = e.originalEvent.touches[0].pageX - $(this).offset().left;
-				mouseY = e.originalEvent.touches[0].pageY - $(this).offset().top;
-		
-				e.stopPropagation(); 
-				e.preventDefault();
-			}
-			else{
-				mouseX = e.pageX - $(this).offset().left;
-				mouseY = e.pageY - $(this).offset().top;
-			}
+        if (sendCursorToThem) {
+            dbLog(EventType.startCursor, userID, {x: mouseX, y: mouseY});
+            isDrawing = false;
+        }
+        else {
+            dbLog(EventType.startDraw, userID, {color: particle.fillColor,
+                x: mouseX,
+                y: mouseY});
+            isDrawing = true;
+        }
 
-			draw_at = $(this).attr("class");
+		if(!stopDrawing) {
+            if (e.originalEvent.touches) {
+                mouseX = e.originalEvent.touches[0].pageX - $(this).offset().left;
+                mouseY = e.originalEvent.touches[0].pageY - $(this).offset().top;
 
-			if(draw_at == "high_res"){
-				draw_at = "them";
-			}		
+                e.stopPropagation();
+                e.preventDefault();
+            }
+            else {
+                mouseX = e.pageX - $(this).offset().left;
+                mouseY = e.pageY - $(this).offset().top;
+            }
 
-			particle.shift.x += (mouseX - particle.shift.x);
-			particle.shift.y += (mouseY - particle.shift.y);
+            draw_at = $(this).attr("class");
+
+            if (draw_at == "high_res") {
+                draw_at = "them";
+            }
+
+            particle.shift.x += (mouseX - particle.shift.x);
+            particle.shift.y += (mouseY - particle.shift.y);
 
             lastDrawX = particle.position.x = particle.shift.x + Math.cos(particle.offset.x);
-			lastDrawY = particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
+            lastDrawY = particle.position.y = particle.shift.y + Math.sin(particle.offset.y);
 
-			mouseIsDown = true;
+            mouseIsDown = true;
             isDrawFade = false;
-			socket.emit('mousedown', {
-				'x': particle.position.x,
-				'y': particle.position.y,
-				'mouseIsDown': mouseIsDown,
-				'draw_at': draw_at
-			});
+            socket.emit('mousedown', {
+                'x': particle.position.x,
+                'y': particle.position.y,
+                'mouseIsDown': mouseIsDown,
+                'draw_at': isFlipVideo ? (draw_at == "me" ? "them" : "me") : draw_at,
+                'isDrawing': isDrawing
+            });
 
-		}
-        if (sendCursorToThem)
-            dbLog(EventType.startCursor, userID, {x: mouseX, y:mouseY});
-        else
-            dbLog(EventType.startDraw, userID, {color: particle.fillColor,
-                                                x: mouseX,
-                                                y: mouseY});
+            if (isDrawOnFrame && !sendCursorToThem && !isShowingImg) {
+                var targetName = draw_at;
+                var targetCanvas = document.getElementById('canvas_' + targetName);
+                $(targetCanvas).css('opacity', '1');
+                $('#' + targetName).hide();
+                //$('#' + targetName).get(0).pause();
+                var context2d = targetCanvas.getContext('2d');
+                //context2d.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+                if (!(isDrawingOnMe && (targetName == 'me') || isDrawingOnThem && (targetName == 'them')))
+                    context2d.drawImage(document.querySelector('#' + targetName), 0, 0, targetCanvas.width, targetCanvas.height);
+                else {
+                    if ( isMeFading || isThemFading) {
+                        $(canvas_them).stop();
+                        $(canvas_me).stop();
+                        $(canvas_them).css('opacity', '1');
+                        $(canvas_me).css('opacity', '1');
+                        isDrawing = true;
+                        isDrawFade = false;
+                        counter = 0;
+                        isMeFading = false;
+                        isDrawingOnMe = true;
+                        isThemFading = false;
+                        isDrawingOnThem = true;
+                    }
+                }
+                if (targetName == 'me') isDrawingOnMe = true;
+                if (targetName == 'them') isDrawingOnThem = true;
+            }
+        }
 	});
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(ev){
@@ -1043,9 +1128,41 @@ $(document).ready(function() {
         callAgain(videoSource)
     });
 
-    socket.om('mousedown', function() {
+    socket.on('mousedown', function(data) {
         isDrawFade = false;
         counter = 0;
+        isDrawing = data.isDrawing;
+        if (isDrawOnFrame && isDrawing && !isShowingImg) {
+            var targetDraw = '';
+            if (data.draw_at == 'them')
+                targetDraw = isFlipVideo?'them':'me';
+            else if (data.draw_at == 'me')
+                targetDraw = isFlipVideo?'me':'them';
+            var targetCanvas = document.getElementById('canvas_'+targetDraw);
+            $(targetCanvas).css('opacity', '1');
+            $('#'+targetDraw).hide();
+            //$('#'+targetDraw).get(0).pause();
+            var context2d = targetCanvas.getContext('2d');
+            if (!(isDrawingOnMe && (targetDraw == 'me') || isDrawingOnThem && (targetDraw == 'them')))
+                context2d.drawImage(document.querySelector('#' + targetDraw), 0, 0, targetCanvas.width, targetCanvas.height);
+            else {
+                if (isMeFading || isThemFading) {
+                    $(canvas_me).stop();
+                    $(canvas_them).stop();
+                    $(canvas_me).css('opacity', '1');
+                    $(canvas_them).css('opacity', '1');
+                    isDrawing = true;
+                    isDrawFade = false;
+                    counter = 0;
+                    isMeFading = false;
+                    isDrawingOnMe = true;
+                    isThemFading = false;
+                    isDrawingOnThem = true;
+                }
+            }
+            if (targetDraw == 'me') isDrawingOnMe = true;
+            if (targetDraw == 'them') isDrawingOnThem = true;
+        }
     })
 });
 
@@ -1483,6 +1600,7 @@ $('.icon#thumbnail').click(function() {
         $('#wrap_thumb').animate({'height':"60%"},500);
         //$('.icon#take_photo').hide(animSpeed);
         $('.icon#switch_cam').hide(animSpeed);
+        $('.icon#thumbnail').attr('src', 'image/take_video.png');
         dbLog(EventType.showThumbnails, userID);
     }
     else {
@@ -1495,7 +1613,7 @@ $('.icon#thumbnail').click(function() {
 
             removeImg();
             dbLog(EventType.hideThumbnails, userID);
-
+            $('.icon#thumbnail').attr('src', 'image/thumbnail.png');
             if (isTakingPhoto) {
                 socket.emit("back_video");
                 back_video(false);
@@ -1848,6 +1966,14 @@ $('.icon#take_photo').click(function(){
         });
 
         displayPicture(isFlipVideo ? "them" : "me", imgData);
+        // Flashing effect
+        currentImg.animate({opacity:"0"},100, function() {
+            currentImg.animate({opacity:"100"},100, function() {
+                currentImg.animate({opacity:"0"},300, function() {
+                    currentImg.animate({opacity:"100"},300);
+                });
+            });
+        });
         //canvas_them.getContext('2d').clearRect ( 0 , 0 ,  canvas_them.width, canvas_them.height);
     }
 
@@ -1859,6 +1985,7 @@ $('.icon#take_photo').click(function(){
         socket.emit('get_thumbnails');
         $('#wrap_thumb').animate({'height':"60%"},500);
         $('.icon#switch_cam').hide(animSpeed);
+        $('.icon#thumbnail').attr('src', 'image/take_video.png');
     }
 
     dbLog(EventType.takePhoto, userID);
