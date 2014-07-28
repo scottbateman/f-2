@@ -91,6 +91,8 @@ var isCursorTrace = true;
 var isTakeVideoFrame = true;
 var isDrawOnFrame = true;
 
+var cursorData;
+
 function send_image(){
 if(sync){
    socket.emit("sync_photo_position", {
@@ -196,7 +198,6 @@ mainInterval = setInterval(function(){
           draw(draw_at, lastDrawX, lastDrawY, lp.x, lp.y, particle.size, particle.fillColor);
 
           trailTime = counter + Math.pow(10, $("#time").val());
-
           socket.emit('draw', {
 
               //'x1': lp.x / $("#canvas_" + draw_at).width(),
@@ -356,6 +357,9 @@ function createFullStream(){
                             "optional": []
                         }};
    holla.createStream(constrain, cb);
+
+    cursorData = new Image();
+    cursorData.src = "/cursor.png";
 }
 
 function hideCursor() {
@@ -395,19 +399,6 @@ $(document).ready(function() {
       $('div#show_small_video_div').hide();
    }
 
-   // $("#canvas_them").hammer().on("doubletap", function(){
-   //    if($("#img_canvas").is(":visible")){
-   //       $("#remove").click();
-   //       stopDrawing = true;
-   //       $("#canvas_them").css("z-index", "0");
-   //    }
-   // });
-   //
-   // $("#img_canvas").hammer().on("doubletap", function(){
-   //    stopDrawing = false;
-   //    $("#canvas_them").css("z-index", "1");
-   // });
-
 	//window.location.hostname does not work with "localhost"
 	socket = io.connect("http://" + window.location.hostname + ":8981");
 	rtc = holla.createClient();
@@ -435,8 +426,8 @@ $(document).ready(function() {
             remoteStream = stream;
             remoteUser[userID] = key;
             userID++;
-            displayIcons();
-
+            //displayIcons();
+            reloadIcons();
             if (!isFlipVideo) remoteStream.pipe($("#them"));
             else remoteStream.pipe($("#me"));
             return remoteStream;
@@ -576,7 +567,8 @@ $(document).ready(function() {
                      $("#alert").html("").hide();
                      remoteUser[userID] = key;
                      userID++;
-                     displayIcons();
+                     //displayIcons();
+                     reloadIcons();
                      if (!isFlipVideo) stream.pipe($("#them"));
                      else stream.pipe($("#me"));
                      return stream;
@@ -623,10 +615,11 @@ $(document).ready(function() {
 
 		back_video(false);
 	});
-
+    /*
 	$("#size").change(function(){
 		particle.size = Math.pow(5, $(this).val());
 	});
+	*/
 
 	$("#time").change(function(){
 		trailTime = counter + Math.pow(10, $("#time").val());
@@ -943,29 +936,12 @@ $(document).ready(function() {
 
 	socket.on('draw', function(data) {
 		var flip;
-
-		// if($("#photo").is(":visible")){
-		// 	flip = data.draw_at == "me" ? "them" : "me";
-		// }
-		// else{
-		// 	flip = "them";// + data.draw_at;
-      //
-		// 	if(sync == true){
-		// 		stopDrawing = false;
-		// 		$("#canvas_them").css("z-index", "1");				
-		// 	}
-		// }
-
-      // flip = data.draw_at == "me" ? "them" : "me";
-      // flip = $("#flip_video").is(':checked') ? (flip == "me" ? "them" : "me") : flip;
-      // next if replaces previous 2 lines
       var checked = isFlipVideo;
       if ((data.draw_at === 'me' && !checked) || (data.draw_at === 'them' && checked)) {
          flip = 'them';
       } else {
          flip = 'me';
       }
-
 		draw(flip, 
 			$("#canvas_" + flip).width() * data.x1, 
 			$("#canvas_" + flip).height() * data.y1, 
@@ -996,7 +972,7 @@ $(document).ready(function() {
               }).appendTo(document.body).show();
               var cursorImg = $('<img>', {
                   id: 'cursor' + cursorIndex,
-                  src: "/cursor.png"
+                  src: cursorData.src
               }).appendTo(cursorDiv).show();
 
               var cursorX = data.x * $('#canvas_' + at).width();
@@ -1183,11 +1159,11 @@ function init_drawing() {
 		them = canvas_them.getContext('2d');
 
 		particle = {
-			size: Math.pow(5, $("#size").val()),
+			size: particle.size,
 			position: { x: mouseX, y: mouseY },
 			offset: { x: 0, y: 0 },
 			shift: { x: mouseX, y: mouseY },
-			speed: 0.3,
+			speed: particle.speed,
 			fillColor: "#ee82ee"
 		};
 
@@ -1237,8 +1213,6 @@ function resizeCanvas(){
 
 function back_video(isReceiver){
     // Delete img and hide div
-    //$('#wrap_me').css("z-index","-2").hide().empty();
-    //$('#wrap_them').css("z-index","-2").hide().empty();
     $(wrap_me).css("z-index","1").empty().show();
     $(wrap_them).css("z-index","1").empty().show();
     // Enable video stream, show video
@@ -1554,7 +1528,7 @@ var callAgain = function (sourceID){
             }
 
             console.log("Created call again", webrtcCall);
-
+            reloadIcons();
             webrtcCall.on('error', function(err) {
                 throw err;
             });
@@ -2159,4 +2133,18 @@ function dbLog(eventType, userID, info) {
                     "time_stamp": new Date().toISOString()
                     };
     socket.emit('log', JSON.stringify(jsonData));
+}
+
+///////////////////////////////////////////////////////////
+function reloadIcons() {
+    $('#me').bind('resize', function() {
+        displayIcons();
+        $('#me').unbind('resize');
+        //$('#them').unbind('resize');
+    });
+    $('#them').bind('resize', function() {
+        displayIcons();
+        //$('#me').unbind('resize');
+        $('#them').unbind('resize');
+    });
 }
