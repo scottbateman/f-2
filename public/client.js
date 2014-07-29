@@ -123,7 +123,8 @@ if(sync){
 function fadeFrame(canvasName) {
 
     var targetCanvas = document.getElementById('canvas_'+canvasName);
-    $('#'+canvasName).show(); //video
+    if ( !isShowingImg)
+        $('#'+canvasName).show(); //video
 
     $(targetCanvas).animate({'opacity':'0'},1200,function(){
         console.log('4');
@@ -352,6 +353,13 @@ function createFullStream(){
                                 "minHeight": "540",
                                 "maxWidth": "720",
                                 "maxHeight": "540"
+                                /*
+                                //"minWidth": "1280",
+                                //"minHeight": "720",
+                                "minWidth": "1280"
+                                //"maxHeight": "720"
+                                //"facingMode": "environment"
+                                */
                             },
 
                             "optional": []
@@ -399,6 +407,7 @@ $(document).ready(function() {
       $('div#show_small_video_div').hide();
    }
 
+    $('#canvas_me').css('z-index', parseInt($('#me').css('z-index'))+1);
 	//window.location.hostname does not work with "localhost"
 	socket = io.connect("http://" + window.location.hostname + ":8981");
 	rtc = holla.createClient();
@@ -1067,7 +1076,7 @@ $(document).ready(function() {
     socket.on('start_move_image', function(){
         isMovingImg = true;
         $(wrap_them).css("z-index", "3");
-        $(wrap_me).css("z-index", "3");
+        $(wrap_me).css("z-index", $('#canvas_me').css('z-index'));
 
         $('.icon#hand').css('border-color', 'red');
         $('.icon#arrow').css('border-color', 'transparent');
@@ -1247,7 +1256,7 @@ function displayPicture(at, src) {
         src: src
     }).appendTo($(wrap)).show();
     currentImg = img;
-    $(wrap_me).css("z-index","3").show();
+    $(wrap_me).css("z-index",$('#canvas_me').css('z-index')).show();
     $(wrap_them).css("z-index","3").show();
 
     img.css("position", "relative");
@@ -1948,7 +1957,7 @@ $('.icon#take_photo').click(function(){
                 });
             });
         });
-        //canvas_them.getContext('2d').clearRect ( 0 , 0 ,  canvas_them.width, canvas_them.height);
+        canvas_them.getContext('2d').clearRect ( 0 , 0 ,  canvas_them.width, canvas_them.height);
     }
 
     // Show thumbnail list
@@ -1979,7 +1988,7 @@ $('.icon#hand').click(function(){
     if (isShowingImg) {
         isMovingImg = true;
         $(wrap_them).css("z-index", "3");
-        $(wrap_me).css("z-index", "3");
+        $(wrap_me).css("z-index", $('#canvas_me').css('z-index'));
 
         $('.icon#hand').css('border-color', 'red');
         $('.icon#arrow').css('border-color', 'transparent');
