@@ -7,6 +7,11 @@
 
 Run `node app.js` in root of repository
 
+** CSV data log feature ** 
+ - Install MongoDB package: http://docs.mongodb.org/manual/installation/ 
+ - Run MongoDB before starting server
+ - Log data will be store in ./database/log.csv file
+ 
 ## Bugs
 
 * If the connection is too bad the call ends, would be nice to refresh the page if that happens
