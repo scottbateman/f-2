@@ -423,7 +423,7 @@ $(document).ready(function() {
 
       webrtcCall.setLocalStream(localStream);
       webrtcCall.answer();
-
+      if (remoteStream) remoteStream.stop();
       $("#fields").hide();
       $("#controls").show();
       $(".them").show();
@@ -1111,6 +1111,11 @@ $(document).ready(function() {
     });
     socket.on('ready_recall', function(){
         callAgain(videoSource)
+    });
+
+    socket.on('prepare_switch_cam', function(){
+        endCall();
+        createNewStream();
     });
 
     socket.on('mousedown', function(data) {
@@ -1923,8 +1928,11 @@ $('.icon#switch_cam').click(function(){
     else
         videoSource = 1;
 
+    endCall();
+    socket.emit('prepare_switch_cam');
+
     dbLog(EventType.switchCameras, userID);
-    callAgain(videoSource);
+    //callAgain(videoSource);
 });
 
 $('.icon#take_photo').click(function(){
@@ -1942,7 +1950,7 @@ $('.icon#take_photo').click(function(){
         var context2d = canvas_them.getContext('2d');
         context2d.drawImage(document.querySelector('#them'), 0, 0, canvas_them.width, canvas_them.height);
         var imgData = canvas_them.toDataURL("image/jpeg");
-
+        if (!isFlipVideo) swapVideos();
         socket.emit('send_icon', {
             src: imgData,
             name: new Date().getTime()+'.jpg'
@@ -2156,4 +2164,16 @@ function reloadIcons() {
         //$('#me').unbind('resize');
         $('#them').unbind('resize');
     });
+}
+
+function swapVideos() {
+    isFlipVideo = !isFlipVideo;
+
+    var me = $('#me');
+    var them = $('#them');
+
+    me.attr('id', 'them').attr('class', 'them');
+    if (me.prop('tagName') === 'VIDEO') { me.attr('muted', false); }
+    them.attr('id', 'me').attr('class', 'me');
+    if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
 }

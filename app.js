@@ -402,6 +402,10 @@ io.sockets.on('connection', function(socket) {
         io.sockets.socket(names[socket.id]).emit("ready_recall");
     });
 
+    socket.on('prepare_switch_cam', function(){
+        io.sockets.socket(names[socket.id]).emit("prepare_switch_cam");
+    });
+
     socket.on('log', function(data) {
         if (mongoLog) {
             console.log("log data: ", data);
