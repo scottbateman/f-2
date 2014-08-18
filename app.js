@@ -420,3 +420,5 @@ io.sockets.on('connection', function(socket) {
         }
     })
 });
+
+io.set('log level', 1);

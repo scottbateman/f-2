@@ -2,13 +2,31 @@
 <html>
 <head>
    <title>Index page for the f-2</title>
+   <script src="jquery.js"></script>
    <meta charset="utf-8" />
    <link rel="stylesheet" href="index.css" type="text/css" media="all" />
 </head>
 <body>
+   <!--
    <ul>
       <li><a href="chat.html">Chat page</a></li>
       <li class='hidden'><a href="screen_sharing.html">Screen sharing page</a></li>
    </ul>
+   -->
+   <form id="form" name="input">
+       User ID: <input type="text" id="textbox" name="userID" value="-1"><br>
+       Simple version<input id="checkbox" type="checkbox"><br><br>
+       <input type="submit" value="Go">
+   </form>
+
+    <script>
+        $("#form").submit(function(e) {
+            e.preventDefault();
+            var userID = $('#textbox').val();
+            var isSimple = document.getElementById("checkbox").checked;
+            document.location = document.location.origin+"/chat.html?userID="+userID+'&simple='+isSimple;
+        });
+    </script>
 </body>
 </html>
+

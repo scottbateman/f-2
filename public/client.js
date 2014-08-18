@@ -1,8 +1,17 @@
 var userID = location.search.split('userID=')[1];
+if (userID) {
+    userID = userID.split('&')[0];
+}
 if (!userID)
     userID = -1;
 
-var isSimple = false;
+var isSimple = location.search.split('simple=')[1];
+if (isSimple) {
+    isSimple = isSimple.split('&')[0];
+}
+if (!isSimple)
+    isSimple = false;
+
 //Set what is enabled
 var video_drawing = true;
 var high_res_drawing = false;
@@ -92,6 +101,33 @@ var isTakeVideoFrame = true;
 var isDrawOnFrame = true;
 
 var cursorData;
+var cursorPoints = [];
+var cursorStartPoint, cursorStartTime;
+var cursorEndPoint, cursorEndTime;
+
+var isAudioOn = false;
+var frontVideoConstraint = {
+    "minWidth": "720",
+    "minHeight": "540",
+    "maxWidth": "720",
+    "maxHeight": "540"
+};
+var rearVideoConstraint = {
+     //"minWidth": "1920"
+     //"minHeight": "600"
+     //"maxWidth": "800",
+     //"maxHeight": "800"
+    "minWidth": "720",
+    "minHeight": "540",
+    "maxWidth": "720",
+    "maxHeight": "540"
+};
+var rearCamConstraint;
+var frontCamConstraint = {  audio: isAudioOn,
+                            "video": {
+                                "mandatory": frontCamConstraint,
+                                "optional": []
+                            }};
 
 function send_image(){
 if(sync){
@@ -217,6 +253,7 @@ mainInterval = setInterval(function(){
           });
           lastDrawX = lp.x;
           lastDrawY = lp.y;
+          cursorPoints.push([parseInt(lp.x), parseInt(lp.y)]);
        }
    } else if (mouseIsDown && sendCursorToThem) {
         if (cursorTime > cursorInterval) {
@@ -226,6 +263,7 @@ mainInterval = setInterval(function(){
                 y: mouseY / $("#canvas_" + draw_at).height(),
                 at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
             });
+            cursorPoints.push([parseInt(mouseX), parseInt(mouseY)]);
         }
    }
 
@@ -345,26 +383,7 @@ function createFullStream(){
       socket.emit("ready");
    };
 
-    var constrain = {   audio: false,
-                        "video": {
-
-                            "mandatory": {
-                                "minWidth": "720",
-                                "minHeight": "540",
-                                "maxWidth": "720",
-                                "maxHeight": "540"
-                                /*
-                                //"minWidth": "1280",
-                                //"minHeight": "720",
-                                "minWidth": "1280"
-                                //"maxHeight": "720"
-                                //"facingMode": "environment"
-                                */
-                            },
-
-                            "optional": []
-                        }};
-   holla.createStream(constrain, cb);
+   holla.createStream(frontCamConstraint, cb);
 
     cursorData = new Image();
     cursorData.src = "/cursor.png";
@@ -848,18 +867,8 @@ $(document).ready(function() {
 	});
 
 	$("#canvas_me, #canvas_them").bind("touchstart mousedown", function(e){
-        if (sendCursorToThem) {
-            dbLog(EventType.startCursor, userID, {x: mouseX, y: mouseY});
-            isDrawing = false;
-        }
-        else {
-            dbLog(EventType.startDraw, userID, {color: particle.fillColor,
-                x: mouseX,
-                y: mouseY});
-            isDrawing = true;
-        }
 
-		if(!stopDrawing) {
+        if(!stopDrawing) {
             if (e.originalEvent.touches) {
                 mouseX = e.originalEvent.touches[0].pageX - $(this).offset().left;
                 mouseY = e.originalEvent.touches[0].pageY - $(this).offset().top;
@@ -871,6 +880,20 @@ $(document).ready(function() {
                 mouseX = e.pageX - $(this).offset().left;
                 mouseY = e.pageY - $(this).offset().top;
             }
+
+            cursorPoints = [];
+            if (sendCursorToThem) {
+                dbLog(EventType.startCursor, userID, {x: mouseX, y: mouseY});
+                isDrawing = false;
+            }
+            else {
+                dbLog(EventType.startDraw, userID, {color: particle.fillColor,
+                    x: mouseX,
+                    y: mouseY});
+                isDrawing = true;
+            }
+            cursorStartPoint = [parseInt(mouseX), parseInt(mouseY)];
+            cursorStartTime = new Date().toISOString();
 
             draw_at = $(this).attr("class");
 
@@ -937,6 +960,19 @@ $(document).ready(function() {
          dbLog(EventType.stopDraw, userID, {color: particle.fillColor,
                                             x: mouseX,
                                             y: mouseY});
+
+      cursorEndPoint = [parseInt(mouseX), parseInt(mouseY)];
+      cursorEndTime = new Date().toISOString();
+      var dragType = sendCursorToThem?"cursor":"draw";
+      dbLog(EventType.fingerDrag, userID, {
+                                            type: dragType,
+                                            startTime: cursorStartTime,
+                                            endTime: cursorEndTime,
+                                            startPoint: cursorStartPoint,
+                                            endPoint: cursorEndPoint,
+                                            points: cursorPoints
+                                          })
+
    });
 
 	$("#img_canvas").bind("touchend mouseup", function(){
@@ -1477,7 +1513,7 @@ Hammer($('#wrap_thumb').get(0), {
 // Switch cameras
 var remoteUser = new Array();
 var sourceIDs = new Array();
-var videoSource;
+var videoSource = 0;
 var camera1 = true;
 var videoSelect = document.querySelector("select#videoSource");
 
@@ -1495,6 +1531,17 @@ function gotSources(sourceInfos) {
             sourceIDs[storageIndex] = sourceInfos[i].id;
             storageIndex++;
         }
+        rearCamConstraint = {   audio: isAudioOn,
+                                "video": {
+                                    "mandatory": rearVideoConstraint,
+                                    "optional": [{sourceId: sourceIDs[1]}]
+                            }};
+
+        frontCamConstraint = {  audio: isAudioOn,
+                                "video": {
+                                    "mandatory": frontVideoConstraint,
+                                    "optional": [{sourceId: sourceIDs[0]}]
+                             }};
     }
 }
 
@@ -1512,7 +1559,9 @@ var callAgain = function (sourceID){
     if (localStream) localStream.stop();
     if (remoteStream) remoteStream.stop();
 
-    var constrain = {   audio: false,
+    var constrain = videoSource == 0?frontCamConstraint:rearCamConstraint;
+    /*
+    var constrain = {   audio: isAudioOn,
         "video": {
             "mandatory": {
                 "minWidth": "720",
@@ -1524,6 +1573,7 @@ var callAgain = function (sourceID){
                 {sourceId: sourceIDs[sourceID]}
             ]
         }};
+    */
 
     holla.createStream(constrain, function(error, stream){
         if (error) {
@@ -1721,7 +1771,7 @@ function showSmallVideo() {
     if (!isShowSmallVideo) {
         myCanvas.show(animSpeed*0.5);
         me.show(animSpeed, function() {
-            $('.icon#switch_cam').show();
+            if (!isSimple) $('.icon#switch_cam').show();
             if (isShowingImg) {
                 if($('#wrap_me').children().length > 0) {
                     currentImg.show();
@@ -2106,6 +2156,8 @@ function createNewStream() {
         socket.emit("ready_recall");
     };
 
+    var constrain = videoSource == 0?frontCamConstraint:rearCamConstraint;
+    /*
     var constrain = {   audio: false,
                         "video": {
                             "mandatory": {
@@ -2116,6 +2168,7 @@ function createNewStream() {
                             },
                             "optional": []
                     }};
+    */
     holla.createStream(constrain, cb);
 };
 
@@ -2141,7 +2194,8 @@ var EventType = {   swapVideos: "button_down_video_swap",
                     stopCall: "button_down_phone_stop",
                     reCall: "button_down_phone_call",
                     selectThumbnail: "finger_down_thumbnail_select",
-                    receiveImage: "image_receive"
+                    receiveImage: "image_receive",
+                    fingerDrag: "finger_drag"
                 };
 function dbLog(eventType, userID, info) {
     var jsonData = {"event_type": eventType,
