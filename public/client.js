@@ -261,8 +261,19 @@ mainInterval = setInterval(function(){
             socket.emit('show_cursor', {
                 x: mouseX / $("#canvas_" + draw_at).width(),
                 y: mouseY / $("#canvas_" + draw_at).height(),
-                at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me")
+                at: isFlipVideo ? draw_at : (draw_at === "me" ? "them" : "me"),
+                local: false
             });
+
+            if (!isFirstCursor) {
+                showCursors({
+                    x: mouseX / $("#canvas_" + draw_at).width(),
+                    y: mouseY / $("#canvas_" + draw_at).height(),
+                    at: isFlipVideo ? (draw_at === "me" ? "them" : "me") : draw_at,
+                    local: true
+                });
+            }
+
             cursorPoints.push([parseInt(mouseX), parseInt(mouseY)]);
         }
    }
@@ -867,7 +878,7 @@ $(document).ready(function() {
 	});
 
 	$("#canvas_me, #canvas_them").bind("touchstart mousedown", function(e){
-
+        console.log("down");
         if(!stopDrawing) {
             if (e.originalEvent.touches) {
                 mouseX = e.originalEvent.touches[0].pageX - $(this).offset().left;
@@ -949,6 +960,7 @@ $(document).ready(function() {
 	});
 	
    $("#canvas_me, #canvas_them").bind("touchend mouseup", function(ev){
+       console.log("up");
       mouseIsDown = false;
       isDrawFade = false;
       counter = 0;
@@ -1000,38 +1012,8 @@ $(document).ready(function() {
 	});
 
    socket.on('show_cursor', function(data) {
-      if (!isCursorTrace) {
-          $('#cursor').show();
-          var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
-
-          moveCursor(at,
-                  data.x * $('#canvas_' + at).width(),
-                  data.y * $('#canvas_' + at).height());
-      }
-      else {
-          if (cursorArray.length < cursorMax) {
-              var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
-              var cursorDiv = $('<div>', {
-                  id: 'cursorDiv' + cursorIndex,
-                  class: 'cursorArrow'
-              }).appendTo(document.body).show();
-              var cursorImg = $('<img>', {
-                  id: 'cursor' + cursorIndex,
-                  src: cursorData.src
-              }).appendTo(cursorDiv).show();
-
-              var cursorX = data.x * $('#canvas_' + at).width();
-              var cursorY = data.y * $('#canvas_' + at).height();
-              cursorDiv.css('left', $('#canvas_' + at).offset().left + cursorX)
-                  .css('top', $('#canvas_' + at).offset().top + cursorY);
-              cursorArray.push(cursorDiv);
-          }
-
-          if (!isFirstCursor) {
-              isFirstCursor = true;
-              cursorRemoteTime = 0;
-          }
-      }
+      if (!(mouseIsDown&&sendCursorToThem))
+          showCursors(data);
    });
 
 	socket.on("clear", function(){
@@ -2230,4 +2212,49 @@ function swapVideos() {
     if (me.prop('tagName') === 'VIDEO') { me.attr('muted', false); }
     them.attr('id', 'me').attr('class', 'me');
     if (them.prop('tagName') === 'VIDEO') { me.attr('muted', true); }
+}
+
+function showCursors(data) {
+    if (!isCursorTrace) {
+        $('#cursor').show();
+        var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
+
+        moveCursor(at,
+                data.x * $('#canvas_' + at).width(),
+                data.y * $('#canvas_' + at).height());
+    }
+    else {
+        if (cursorArray.length < cursorMax) {
+            var at = isFlipVideo ? (data.at == "me" ? "them" : "me") : data.at;
+            var cursorDiv = $('<div>', {
+                id: 'cursorDiv' + cursorIndex,
+                class: 'cursorArrow'
+            }).appendTo(document.body).show();
+            var cursorImg = $('<img>', {
+                id: 'cursor' + cursorIndex,
+                src: cursorData.src
+            }).appendTo(cursorDiv).show();
+
+
+            var cursorX = data.x * $('#canvas_' + at).width();
+            var cursorY = data.y * $('#canvas_' + at).height();
+
+            cursorDiv.css('left', $('#canvas_' + at).offset().left + cursorX)
+                .css('top', $('#canvas_' + at).offset().top + cursorY);
+            if (at =='me')
+                cursorDiv.css('z-index',"4");
+            else
+                cursorDiv.css('z-index',"1");
+
+            cursorArray.push(cursorDiv);
+
+        }
+
+        if (!data.local) {
+            if (!isFirstCursor) {
+                isFirstCursor = true;
+                cursorRemoteTime = 0;
+            }
+        }
+    }
 }
