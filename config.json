@@ -1,9 +1,9 @@
 {
    "web": {
       "ip": "127.0.0.1",
-      "port": 8980
+      "port": 9980
    },
-   "ioSocketPort": 8981,
+   "ioSocketPort": 9981,
    "mongoDB": {
        "name": "f2db",
        "ip": "127.0.0.1",

@@ -12,6 +12,8 @@ if (isSimple) {
 if (!isSimple)
     isSimple = false;
 
+isSimple = false;
+
 //Set what is enabled
 var video_drawing = true;
 var high_res_drawing = false;
@@ -394,7 +396,7 @@ function createFullStream(){
       socket.emit("ready");
    };
 
-   holla.createStream(frontCamConstraint, cb);
+   holla.createStream(rearCamConstraint, cb);
 
     cursorData = new Image();
     cursorData.src = "/cursor.png";
@@ -439,7 +441,7 @@ $(document).ready(function() {
 
     $('#canvas_me').css('z-index', parseInt($('#me').css('z-index'))+1);
 	//window.location.hostname does not work with "localhost"
-	socket = io.connect("http://" + window.location.hostname + ":8981");
+	socket = io.connect("http://" + window.location.hostname + ":9981");
 	rtc = holla.createClient();
 
    rtc.on("call", function(call) {
@@ -1496,7 +1498,7 @@ Hammer($('#wrap_thumb').get(0), {
 var remoteUser = new Array();
 var sourceIDs = new Array();
 var videoSource = 0;
-var camera1 = true;
+var camera1 = false;
 var videoSelect = document.querySelector("select#videoSource");
 
 MediaStreamTrack.getSources(gotSources);
